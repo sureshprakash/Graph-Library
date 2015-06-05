@@ -13,39 +13,39 @@
 using namespace std;
 
 template <class T>
-class Vertex
-{
-	private:
-		T label;
-		multiset<Vertex<T> *> adj;
-		multiset<Vertex<T> *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed
-		
-	public:
-		Vertex(T label);
-		~Vertex();
-		
-		void setLabel(T label);
-		T getLabel() const;
-		
-		bool checkLabel(T label) const;
-		multiset<Vertex<T> *> getAdjacentNodes() const;
-		
-		void addEdge(Vertex<T> *dest);
-		bool removeEdge(Vertex<T> *dest);
-		void addEdgesInBatch(multiset<Vertex<T> *> new_adj);
-		bool edgeExists(Vertex<T> *dest) const;
-		
-		void changeAdjacent(Vertex<T> *dest);
-};
-
-template <class T>
 class Graph
 {
 	private:
-		multiset<Vertex<T> *> vertices;
+	
+		class Vertex
+		{
+			private:
+				T label;
+				multiset<Vertex *> adj;
+				multiset<Vertex *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed
+	
+			public:
+				Vertex(T label);
+				~Vertex();
+	
+				void setLabel(T label);
+				T getLabel() const;
+	
+				bool checkLabel(T label) const;
+				multiset<Vertex *> getAdjacentNodes() const;
+	
+				void addEdge(Vertex *dest);
+				bool removeEdge(Vertex *dest);
+				void addEdgesInBatch(multiset<Vertex *> new_adj);
+				bool edgeExists(Vertex *dest) const;
+	
+				void changeAdjacent(Vertex *dest);
+		};
+
+		multiset<Vertex *> vertices;
 		bool directed;
 		
-		typename multiset<Vertex<T> *>::iterator findVertex(T label) const;
+		typename multiset<Vertex *>::iterator findVertex(T label) const;
 	
 	public:
 		Graph(bool directed);
@@ -62,13 +62,13 @@ class Graph
 		
 		friend ostream &operator<<(ostream &out, const Graph &g)
 		{	
-			for(typename multiset<Vertex<T> *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
+			for(typename multiset<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 			{	
 				out << (*v)->getLabel() << " --->  ";
 				
-				multiset<Vertex<T> *> nbh = (*v)->getAdjacentNodes();
+				multiset<Vertex *> nbh = (*v)->getAdjacentNodes();
 				
-				for(typename multiset<Vertex<T> *>::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
+				for(typename multiset<Vertex *>::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
 				{
 					out << (*adj)->getLabel() << ", ";
 				}
@@ -93,17 +93,17 @@ class Graph
 
 
 template <class T>
-Vertex<T>::Vertex(T label) : label(label)
+Graph<T>::Vertex::Vertex(T label) : label(label)
 {
 }
 
 template <class T>
-Vertex<T>::~Vertex()
+Graph<T>::Vertex::~Vertex()
 {
 	adj.clear();
 	
 	// Remove all the edges corresponding to this vertex
-	for(typename multiset<Vertex<T> *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
+	for(typename multiset<Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
 	{
 		(*v)->removeEdge(this);
 	}
@@ -112,31 +112,31 @@ Vertex<T>::~Vertex()
 }
 
 template <class T>
-void Vertex<T>::setLabel(T label)
+void Graph<T>::Vertex::setLabel(T label)
 {
 	this->label = label;
 }
 
 template <class T>
-T Vertex<T>::getLabel() const
+T Graph<T>::Vertex::getLabel() const
 {
 	return label;
 }
 
 template <class T>
-multiset<Vertex<T> *> Vertex<T>::getAdjacentNodes() const
+multiset<typename Graph<T>::Vertex *> Graph<T>::Vertex::getAdjacentNodes() const
 {
 	return adj;
 }
 
 template <class T>
-bool Vertex<T>::checkLabel(T label) const
+bool Graph<T>::Vertex::checkLabel(T label) const
 {
 	return (label == this->label);
 }
 
 template <class T>
-void Vertex<T>::addEdge(Vertex<T> *dest)
+void Graph<T>::Vertex::addEdge(Graph<T>::Vertex *dest)
 {
 	if(dest != NULL)
 	{
@@ -146,7 +146,7 @@ void Vertex<T>::addEdge(Vertex<T> *dest)
 }
 
 template <class T>
-bool Vertex<T>::removeEdge(Vertex<T> *dest)
+bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
 {
 	if(adj.find(dest) == adj.end())
 	{
@@ -160,27 +160,27 @@ bool Vertex<T>::removeEdge(Vertex<T> *dest)
 }
 
 template <class T>
-void Vertex<T>::addEdgesInBatch(multiset<Vertex<T> *> new_adj)
+void Graph<T>::Vertex::addEdgesInBatch(multiset<Graph<T>::Vertex *> new_adj)
 {
 	// adj.insert() is not used intentionally because, backword pointers are needed for deletion
-	for(typename multiset<Vertex<T> *>::iterator v = new_adj.begin(); v != new_adj.end(); v++)
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = new_adj.begin(); v != new_adj.end(); v++)
 	{
 		addEdge(*v);
 	}
 }
 
 template <class T>
-bool Vertex<T>::edgeExists(Vertex<T> *dest) const
+bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest) const
 {
 	return (adj.find(dest) != adj.end());
 }
 
 template <class T>
-void Vertex<T>::changeAdjacent(Vertex<T> *dest)
+void Graph<T>::Vertex::changeAdjacent(Graph<T>::Vertex *dest)
 {
-	for(typename multiset<Vertex<T> *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
 	{
-		typename multiset<Vertex<T> *>::iterator fd = (*v)->adj.find(this);
+		typename multiset<Graph<T>::Vertex *>::iterator fd = (*v)->adj.find(this);
 		if(fd != (*v)->adj.end())
 		{
 			(*v)->adj.erase(fd);
@@ -203,7 +203,7 @@ Graph<T>::Graph(Graph<T> &g)
 template <class T>
 Graph<T>::~Graph()
 {
-	for(typename multiset<Vertex<T> *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	for(typename multiset<Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
 	{
 		delete (*v);
 	}
@@ -215,16 +215,17 @@ template <class T>
 void Graph<T>::operator=(const Graph<T> &g)
 {
 	directed = g.directed;
-	for(typename multiset<Vertex<T> *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
+	for(typename multiset<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 	{
 		vertices.insert(*v);
 	}
 }
 
 template <class T>
-typename multiset<Vertex<T> *>::iterator Graph<T>::findVertex(T label) const
+typename multiset<typename Graph<T>::Vertex *>::iterator Graph<T>::findVertex(T label) const
 {
-	for(typename multiset<Vertex<T> *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	// TODO: Convert this to in-built search function
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
 	{
 		if((*v)->checkLabel(label))
 		{
@@ -244,7 +245,7 @@ bool Graph<T>::addVertex(T label)
 		return false;
 	}
 	
-	Vertex<T> *new_node = new Vertex<T>(label);
+	Vertex *new_node = new Vertex(label);
 	
 	// Memory full
 	if(new_node == NULL)
@@ -259,7 +260,7 @@ bool Graph<T>::addVertex(T label)
 template <class T>
 bool Graph<T>::removeVertex(T label)
 {
-	typename multiset<Vertex<T> *>::iterator node = findVertex(label);
+	typename multiset<Graph<T>::Vertex *>::iterator node = findVertex(label);
 	
 	// Label does not exist
 	if(node == vertices.end())
@@ -276,8 +277,8 @@ bool Graph<T>::removeVertex(T label)
 template <class T>
 bool Graph<T>::addEdge(T head, T tail)
 {	
-	typename multiset<Vertex<T> *>::iterator hd = findVertex(head);
-	typename multiset<Vertex<T> *>::iterator tl = findVertex(tail);
+	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -289,7 +290,7 @@ bool Graph<T>::addEdge(T head, T tail)
 	
 	if(!directed)
 	{
-		if((*hd) != (*tl))		// To avoid adding self loops twice
+//		if((*hd) != (*tl))		// To avoid adding self loops twice
 		{
 			(*tl)->addEdge(*hd);
 		}
@@ -301,8 +302,8 @@ bool Graph<T>::addEdge(T head, T tail)
 template <class T>
 bool Graph<T>::removeEdge(T head, T tail)
 {
-	typename multiset<Vertex<T> *>::iterator hd = findVertex(head);
-	typename multiset<Vertex<T> *>::iterator tl = findVertex(tail);
+	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -316,7 +317,7 @@ bool Graph<T>::removeEdge(T head, T tail)
 	
 	if(!directed)
 	{
-		if((*hd) != (*tl))		// To avoid adding self loops twice
+//		if((*hd) != (*tl))		// To avoid adding self loops twice
 		{
 			backword = (*tl)->removeEdge(*hd);
 		}
@@ -328,8 +329,8 @@ bool Graph<T>::removeEdge(T head, T tail)
 template <class T>
 bool Graph<T>::edgeExists(T head, T tail) const
 {
-	typename multiset<Vertex<T> *>::iterator hd = findVertex(head);
-	typename multiset<Vertex<T> *>::iterator tl = findVertex(tail);
+	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -343,7 +344,7 @@ bool Graph<T>::edgeExists(T head, T tail) const
 template <class T>
 void Graph<T>::removeSelfLoops()
 {
-	for(typename multiset<Vertex<T> *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
 	{	
 		removeEdge((*v)->getLabel(), (*v)->getLabel());
 	}
@@ -352,9 +353,9 @@ void Graph<T>::removeSelfLoops()
 template <class T>
 bool Graph<T>::mergeVertices(T first, T second, T new_label)
 {
-	typename multiset<Vertex<T> *>::iterator ft = findVertex(first);
-	typename multiset<Vertex<T> *>::iterator sd = findVertex(second);
-	typename multiset<Vertex<T> *>::iterator nw = findVertex(new_label);
+	typename multiset<Graph<T>::Vertex *>::iterator ft = findVertex(first);
+	typename multiset<Graph<T>::Vertex *>::iterator sd = findVertex(second);
+	typename multiset<Graph<T>::Vertex *>::iterator nw = findVertex(new_label);
 	
 	// One of the lables does not exist
 	if((ft == vertices.end()) || (sd == vertices.end()))
@@ -389,7 +390,7 @@ template <class T>
 T Graph<T>::pickRandomVertex() const
 {
 	int rnd = rand() % vertices.size();
-	typename multiset<Vertex<T> *>::const_iterator it(vertices.begin());
+	typename multiset<Graph<T>::Vertex *>::const_iterator it(vertices.begin());
 	advance(it, rnd);
 	
 	return (*it)->getLabel();
@@ -398,8 +399,8 @@ T Graph<T>::pickRandomVertex() const
 template <class T>
 pair<T, T> Graph<T>::pickRandomEdge() const
 {
-	Vertex<T> *hd;
-	multiset<Vertex<T> *> adj;
+	Vertex *hd;
+	multiset<Graph<T>::Vertex *> adj;
 	int cnt = 0;
 	const int double_num_vertices = 4 * vertices.size();
 	
@@ -416,10 +417,10 @@ pair<T, T> Graph<T>::pickRandomEdge() const
 	}
 		
 	int rnd = rand() % adj.size();
-	typename multiset<Vertex<T> *>::const_iterator it(adj.begin());
+	typename multiset<Graph<T>::Vertex *>::const_iterator it(adj.begin());
 	advance(it, rnd);
 	
-	Vertex<T> *tl = *it;
+	Vertex *tl = *it;
 	
 	return make_pair(hd->getLabel(), tl->getLabel());
 }
