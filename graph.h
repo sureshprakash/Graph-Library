@@ -21,7 +21,7 @@ class Graph
 		{
 			private:
 				T label;
-				multiset<Vertex *> adj;
+				multiset<pair<Vertex *, int> > adj;
 				multiset<Vertex *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed
 	
 			public:
@@ -32,12 +32,14 @@ class Graph
 				T getLabel() const;
 	
 				bool checkLabel(T label) const;
-				multiset<Vertex *> getAdjacentNodes() const;
+				multiset<pair<Vertex *, int> > getAdjacentNodes() const;
 	
-				void addEdge(Vertex *dest);
+				void addEdge(Vertex *dest, int cost);
+				bool removeEdge(Vertex *dest, int cost);
 				bool removeEdge(Vertex *dest);
-				void addEdgesInBatch(multiset<Vertex *> new_adj);
-				bool edgeExists(Vertex *dest) const;
+				void addEdgesInBatch(multiset<pair<Vertex *, int> > new_adj);
+				bool edgeExists(Vertex *dest, int cost) const;
+				unsigned int countEdge(Vertex *dest, int cost) const;
 	
 				void changeAdjacent(Vertex *dest);
 		};
@@ -55,10 +57,11 @@ class Graph
 		bool addVertex(T label);
 		bool removeVertex(T label);
 		
-		bool addEdge(T head, T tail);
-		bool removeEdge(T head, T tail);
+		bool addEdge(T head, T tail, int cost = 1);
+		bool removeEdge(T head, T tail, int cost = 1);
 		
-		bool edgeExists(T head, T tail) const;
+		bool edgeExists(T head, T tail, int cost = 1) const;
+		int countEdge(T head, T tail, int cost = 1) const;
 		
 		friend ostream &operator<<(ostream &out, const Graph &g)
 		{	
@@ -66,11 +69,11 @@ class Graph
 			{	
 				out << (*v)->getLabel() << " --->  ";
 				
-				multiset<Vertex *> nbh = (*v)->getAdjacentNodes();
+				multiset<pair<Vertex *, int> > nbh = (*v)->getAdjacentNodes();
 				
-				for(typename multiset<Vertex *>::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
+				for(typename multiset<pair<Vertex *, int> >::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
 				{
-					out << (*adj)->getLabel() << ", ";
+					out << (*adj).first->getLabel() << "(" << (*adj).second << "), ";
 				}
 				
 				out << "\b\b " << endl;
@@ -124,7 +127,7 @@ T Graph<T>::Vertex::getLabel() const
 }
 
 template <class T>
-multiset<typename Graph<T>::Vertex *> Graph<T>::Vertex::getAdjacentNodes() const
+multiset<pair<typename Graph<T>::Vertex *, int> > Graph<T>::Vertex::getAdjacentNodes() const
 {
 	return adj;
 }
@@ -136,19 +139,19 @@ bool Graph<T>::Vertex::checkLabel(T label) const
 }
 
 template <class T>
-void Graph<T>::Vertex::addEdge(Graph<T>::Vertex *dest)
+void Graph<T>::Vertex::addEdge(Graph<T>::Vertex *dest, int cost)
 {
 	if(dest != NULL)
 	{
-		this->adj.insert(dest);
+		this->adj.insert(make_pair(dest, cost));
 		dest->rev.insert(this);
 	}
 }
 
 template <class T>
-bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
+bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest, int cost)
 {
-	typename multiset<Graph<T>::Vertex *>::iterator pos = adj.find(dest);
+	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = adj.find(make_pair(dest, cost));
 	
 	if(pos == adj.end())
 	{
@@ -162,19 +165,50 @@ bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
 }
 
 template <class T>
-void Graph<T>::Vertex::addEdgesInBatch(multiset<Graph<T>::Vertex *> new_adj)
+bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
+{
+	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = adj.end();
+	
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->first == dest)
+		{
+			pos = itr;
+			break;
+		}
+	}
+	
+	if(pos == adj.end())
+	{
+		return false;
+	}
+	
+	this->adj.erase(pos); // This is done so that only one copy of the edge is deleted
+	dest->rev.erase(dest->rev.find(this));
+	
+	return true;
+}
+
+template <class T>
+void Graph<T>::Vertex::addEdgesInBatch(multiset<pair<Graph<T>::Vertex *, int> > new_adj)
 {
 	// adj.insert() is not used intentionally because, backword pointers are needed for deletion
-	for(typename multiset<Graph<T>::Vertex *>::iterator v = new_adj.begin(); v != new_adj.end(); v++)
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator v = new_adj.begin(); v != new_adj.end(); v++)
 	{
 		addEdge(*v);
 	}
 }
 
 template <class T>
-bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest) const
+bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest, int cost) const
 {
-	return (adj.find(dest) != adj.end());
+	return adj.find(make_pair(dest, cost)) != adj.end();
+}
+
+template <class T>
+unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest, int cost) const
+{
+	return adj.count(make_pair(dest, cost));
 }
 
 template <class T>
@@ -276,7 +310,7 @@ bool Graph<T>::removeVertex(T label)
 }
 
 template <class T>
-bool Graph<T>::addEdge(T head, T tail)
+bool Graph<T>::addEdge(T head, T tail, int cost)
 {	
 	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
 	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
@@ -287,13 +321,13 @@ bool Graph<T>::addEdge(T head, T tail)
 		return false;
 	}
 	
-	(*hd)->addEdge(*tl);
+	(*hd)->addEdge(*tl, cost);
 	
 	if(!directed)
 	{
-//		if((*hd) != (*tl))		// To avoid adding self loops twice
+		if((*hd) != (*tl))		// To avoid adding self loops twice
 		{
-			(*tl)->addEdge(*hd);
+			(*tl)->addEdge(*hd, cost);
 		}
 	}
 	
@@ -301,7 +335,7 @@ bool Graph<T>::addEdge(T head, T tail)
 }
 
 template <class T>
-bool Graph<T>::removeEdge(T head, T tail)
+bool Graph<T>::removeEdge(T head, T tail, int cost)
 {
 	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
 	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
@@ -314,13 +348,13 @@ bool Graph<T>::removeEdge(T head, T tail)
 	
 	bool forward = true, backword = true;
 	
-	forward = (*hd)->removeEdge(*tl);
+	forward = (*hd)->removeEdge(*tl, cost);
 	
 	if(!directed)
 	{
-//		if((*hd) != (*tl))		// To avoid adding self loops twice
+		if((*hd) != (*tl))		// To avoid removing self loops twice
 		{
-			backword = (*tl)->removeEdge(*hd);
+			backword = (*tl)->removeEdge(*hd, cost);
 		}
 	}
 	
@@ -328,7 +362,7 @@ bool Graph<T>::removeEdge(T head, T tail)
 }
 
 template <class T>
-bool Graph<T>::edgeExists(T head, T tail) const
+bool Graph<T>::edgeExists(T head, T tail, int cost) const
 {
 	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
 	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
@@ -339,8 +373,24 @@ bool Graph<T>::edgeExists(T head, T tail) const
 		return false;
 	}
 	
-	return (*hd)->edgeExists(*tl);
+	return (*hd)->edgeExists(*tl, cost);
 }
+
+template <class T>
+int Graph<T>::countEdge(T head, T tail, int cost) const
+{
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == vertices.end()) || (tl == vertices.end()))
+	{
+		return -1;
+	}
+	
+	return (*hd)->countEdge(*tl, cost);
+}
+
 
 template <class T>
 void Graph<T>::removeSelfLoops()

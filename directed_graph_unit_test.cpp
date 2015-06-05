@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 	g.addVertex('B');
 	g.addVertex('C');
 	g.addVertex('D');
+	g.addVertex('A'); // Redundancy check
 	
 	/*
 -----	          ====
@@ -43,6 +44,11 @@ int main(int argc, char *argv[])
 	g.addEdge('D', 'C');
 	g.addEdge('C', 'D');
 	
+	// Test for invalid vertices
+	g.addEdge('A', 'F');
+	g.addEdge('E', 'B');
+	g.addEdge('G', 'H');
+	
 	cout << "---------------------- Original graph ------------------------" << endl;
 	cout << g << endl;
 	
@@ -64,7 +70,57 @@ int main(int argc, char *argv[])
 	cout << "---------------------- Removed edges are added back -----------------------------------------" << endl;
 	cout << g << endl;
 	
+	g.removeVertex('B');
+	g.removeVertex('E'); // Remove non existing vertex
 	
+	cout << "---------------------- Vertex B removed -----------------------------------------------------" << endl;
+	cout << g << endl;
+	
+	g.addVertex('B');
+	
+	cout << "---------------------- Vertex B added back --------------------------------------------------" << endl;
+	cout << g << endl;
+	
+	g.addEdge('A', 'B');
+	g.addEdge('A', 'B');
+	g.addEdge('B', 'B');
+	g.addEdge('B', 'B');
+	g.addEdge('D', 'B');
+	
+	cout << "---------------------- Edges with B are recreated -------------------------------------------" << endl;
+	cout << g << endl;
+	
+	cout << "Edge existency check: " << endl;
+	cout << "A, A = " << g.edgeExists('A', 'A') << endl;
+	cout << "A, B = " << g.edgeExists('A', 'B') << endl;
+	cout << "B, B = " << g.edgeExists('B', 'B') << endl;
+	cout << "A, C = " << g.edgeExists('A', 'C') << endl;
+	cout << "C, A = " << g.edgeExists('C', 'A') << endl;
+	cout << "D, B = " << g.edgeExists('D', 'B') << endl;
+	cout << "C, D = " << g.edgeExists('C', 'D') << endl;
+	cout << "D, C = " << g.edgeExists('D', 'C') << endl;
+	cout << "A, D = " << g.edgeExists('A', 'D') << endl;
+	cout << "B, C = " << g.edgeExists('B', 'C') << endl;
+	cout << "B, D = " << g.edgeExists('B', 'D') << endl;
+	cout << "C, C = " << g.edgeExists('C', 'C') << endl;
+	cout << "D, D = " << g.edgeExists('D', 'D') << endl;
+	cout << "E, D = " << g.edgeExists('E', 'D') << endl;
+	
+	cout << "Edge counts: " << endl;
+	cout << "A, A = " << g.countEdge('A', 'A') << endl;
+	cout << "A, B = " << g.countEdge('A', 'B') << endl;
+	cout << "B, B = " << g.countEdge('B', 'B') << endl;
+	cout << "A, C = " << g.countEdge('A', 'C') << endl;
+	cout << "C, A = " << g.countEdge('C', 'A') << endl;
+	cout << "D, B = " << g.countEdge('D', 'B') << endl;
+	cout << "C, D = " << g.countEdge('C', 'D') << endl;
+	cout << "D, C = " << g.countEdge('D', 'C') << endl;
+	cout << "A, D = " << g.countEdge('A', 'D') << endl;
+	cout << "B, C = " << g.countEdge('B', 'C') << endl;
+	cout << "B, D = " << g.countEdge('B', 'D') << endl;
+	cout << "C, C = " << g.countEdge('C', 'C') << endl;
+	cout << "D, D = " << g.countEdge('D', 'D') << endl;
+	cout << "E, D = " << g.countEdge('E', 'D') << endl;
 	
 	return 0;
 }
