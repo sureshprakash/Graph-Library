@@ -42,10 +42,10 @@ class Graph
 				void changeAdjacent(Vertex *dest);
 		};
 
-		multiset<Vertex *> vertices;
+		set<Vertex *> vertices;
 		bool directed;
 		
-		typename multiset<Vertex *>::iterator findVertex(T label) const;
+		typename set<Vertex *>::iterator findVertex(T label) const;
 	
 	public:
 		Graph(bool directed);
@@ -148,13 +148,15 @@ void Graph<T>::Vertex::addEdge(Graph<T>::Vertex *dest)
 template <class T>
 bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
 {
-	if(adj.find(dest) == adj.end())
+	typename multiset<Graph<T>::Vertex *>::iterator pos = adj.find(dest);
+	
+	if(pos == adj.end())
 	{
 		return false;
 	}
 	
-	this->adj.erase(dest);
-	dest->rev.erase(this);
+	this->adj.erase(pos); // This is done so that only one copy of the edge is deleted
+	dest->rev.erase(dest->rev.find(this));
 	
 	return true;
 }
@@ -222,9 +224,8 @@ void Graph<T>::operator=(const Graph<T> &g)
 }
 
 template <class T>
-typename multiset<typename Graph<T>::Vertex *>::iterator Graph<T>::findVertex(T label) const
+typename set<typename Graph<T>::Vertex *>::iterator Graph<T>::findVertex(T label) const
 {
-	// TODO: Convert this to in-built search function
 	for(typename multiset<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
 	{
 		if((*v)->checkLabel(label))
@@ -260,7 +261,7 @@ bool Graph<T>::addVertex(T label)
 template <class T>
 bool Graph<T>::removeVertex(T label)
 {
-	typename multiset<Graph<T>::Vertex *>::iterator node = findVertex(label);
+	typename set<Graph<T>::Vertex *>::iterator node = findVertex(label);
 	
 	// Label does not exist
 	if(node == vertices.end())
@@ -277,8 +278,8 @@ bool Graph<T>::removeVertex(T label)
 template <class T>
 bool Graph<T>::addEdge(T head, T tail)
 {	
-	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
-	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -302,8 +303,8 @@ bool Graph<T>::addEdge(T head, T tail)
 template <class T>
 bool Graph<T>::removeEdge(T head, T tail)
 {
-	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
-	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -329,8 +330,8 @@ bool Graph<T>::removeEdge(T head, T tail)
 template <class T>
 bool Graph<T>::edgeExists(T head, T tail) const
 {
-	typename multiset<Graph<T>::Vertex *>::iterator hd = findVertex(head);
-	typename multiset<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
 	
 	// One of the lables does not exist
 	if((hd == vertices.end()) || (tl == vertices.end()))
@@ -344,7 +345,7 @@ bool Graph<T>::edgeExists(T head, T tail) const
 template <class T>
 void Graph<T>::removeSelfLoops()
 {
-	for(typename multiset<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	for(typename set<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
 	{	
 		removeEdge((*v)->getLabel(), (*v)->getLabel());
 	}
@@ -353,9 +354,9 @@ void Graph<T>::removeSelfLoops()
 template <class T>
 bool Graph<T>::mergeVertices(T first, T second, T new_label)
 {
-	typename multiset<Graph<T>::Vertex *>::iterator ft = findVertex(first);
-	typename multiset<Graph<T>::Vertex *>::iterator sd = findVertex(second);
-	typename multiset<Graph<T>::Vertex *>::iterator nw = findVertex(new_label);
+	typename set<Graph<T>::Vertex *>::iterator ft = findVertex(first);
+	typename set<Graph<T>::Vertex *>::iterator sd = findVertex(second);
+	typename set<Graph<T>::Vertex *>::iterator nw = findVertex(new_label);
 	
 	// One of the lables does not exist
 	if((ft == vertices.end()) || (sd == vertices.end()))
@@ -390,7 +391,7 @@ template <class T>
 T Graph<T>::pickRandomVertex() const
 {
 	int rnd = rand() % vertices.size();
-	typename multiset<Graph<T>::Vertex *>::const_iterator it(vertices.begin());
+	typename set<Graph<T>::Vertex *>::const_iterator it(vertices.begin());
 	advance(it, rnd);
 	
 	return (*it)->getLabel();
