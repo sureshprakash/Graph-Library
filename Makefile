@@ -3,7 +3,7 @@ all:
 	./graph
 	
 clean:
-	rm -rf graph directed weighted
+	rm -rf graph directed weighted topsort
 	find . -name '*~' -delete
 	
 test_directed:
@@ -13,6 +13,10 @@ test_directed:
 test_weighted:
 	g++ directed_weighted_graph_unit_test.cpp -o weighted -g
 	./weighted
+	
+test_topological:
+	g++ topsort.cpp -o topsort -g
+	./topsort
 	
 git: clean
 	git add *

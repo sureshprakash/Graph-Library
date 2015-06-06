@@ -133,6 +133,16 @@ int main(int argc, char *argv[])
 	
 	cout << "-------------------------- All self loops are removed -------------------" << endl;
 	cout << g << endl;
+	
+	cout << "Indegree of C: " << g.indegree('C') << endl;
+	cout << "Indegree of D: " << g.indegree('D') << endl;
+	cout << "Indegree of E: " << g.indegree('E') << endl;
+	cout << "Indegree of A: " << g.indegree('A') << endl;	
+
+	cout << "Outdegree of C: " << g.outdegree('C') << endl;
+	cout << "Outdegree of D: " << g.outdegree('D') << endl;
+	cout << "Outdegree of E: " << g.outdegree('E') << endl;
+	cout << "Outdegree of F: " << g.outdegree('F') << endl;	
 
 	return 0;
 }

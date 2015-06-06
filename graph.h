@@ -6,6 +6,9 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <queue>
+#include <stack>
+#include <iostream>
 
 using namespace std;
 
@@ -70,6 +73,9 @@ class Graph
 				
 				unsigned int countEdge(Vertex *dest);
 				unsigned int countEdge(Vertex *dest, int cost);
+				
+				int indegree();
+				int outdegree();
 	
 				void changeAdjacent(Vertex *dest);
 				void removeFromReverse(Vertex *dest);
@@ -79,6 +85,8 @@ class Graph
 		bool directed;
 		
 		Vertex * findVertex(T label);
+		
+		Vertex * findFirstVertexWithIndegreeZero();
 	
 	public:
 		Graph(bool directed);
@@ -99,6 +107,9 @@ class Graph
 		
 		void operator=(Graph<T> &g);
 		
+		int indegree(T label);
+		int outdegree(T label);
+		
 		void removeSelfLoops();
 		
 		bool mergeVertices(T first, T second, T new_label);
@@ -107,6 +118,8 @@ class Graph
 		Edge<T> * pickRandomEdge();
 		
 		int minCut();
+		
+		vector<T> topologicalSort();
 		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
@@ -296,6 +309,18 @@ unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest)
 }
 
 template <class T>
+int Graph<T>::Vertex::indegree()
+{
+	return rev.size();
+}
+
+template <class T>
+int Graph<T>::Vertex::outdegree()
+{
+	return adj.size();
+}
+
+template <class T>
 void Graph<T>::Vertex::changeAdjacent(Graph<T>::Vertex *dest)
 {
 	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
@@ -382,6 +407,42 @@ typename Graph<T>::Vertex * Graph<T>::findVertex(T label)
 	}
 	
 	return vertices[label];
+}
+
+template <class T>
+int Graph<T>::indegree(T label)
+{
+	if(findVertex(label) == NULL)
+	{
+		return -1;
+	}
+	
+	return vertices[label]->indegree();
+}
+
+template <class T>
+int Graph<T>::outdegree(T label)
+{
+	if(findVertex(label) == NULL)
+	{
+		return -1;
+	}
+	
+	return vertices[label]->outdegree();
+}
+
+template <class T>
+typename Graph<T>::Vertex * Graph<T>::findFirstVertexWithIndegreeZero()
+{
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		if(itr->second->indegree() == 0)
+		{
+			return itr->second;
+		}
+	}
+	
+	return NULL;
 }
 
 template <class T>
@@ -548,6 +609,61 @@ void Graph<T>::removeSelfLoops()
 }
 
 template <class T>
+vector<T> Graph<T>::topologicalSort()
+{
+	if(!directed)
+	{
+		throw "Not a directed graph";
+	}
+	
+	Vertex *ft = findFirstVertexWithIndegreeZero();
+	
+	if(ft == NULL)
+	{
+		throw "Not an acyclic graph";
+	}	
+	
+	queue<Vertex *> q;
+	vector<T> res;
+	const unsigned int sz = vertices.size();
+	
+	// Create and initialize table
+	map<T, unsigned int> indegree_table;
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		indegree_table[itr->first] = itr->second->indegree();
+	}
+	
+	q.push(ft);
+	
+	while(res.size() < sz)
+	{
+		if(q.empty())
+		{
+			throw "Not an acyclic graph";
+		}
+		
+		ft = q.front();
+		q.pop();
+		
+		res.push_back(ft->getLabel());
+		
+		multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			indegree_table[a->first->getLabel()]--;
+			
+			if(indegree_table[a->first->getLabel()] == 0)
+			{
+				q.push(a->first);
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
 bool Graph<T>::mergeVertices(T first, T second, T new_label)
 {
 	Vertex * ft = findVertex(first);
@@ -658,8 +774,6 @@ int Graph<T>::minCut()
 			
 			g.mergeVertices(rn->src, rn->dest, rn->src);
 			g.removeSelfLoops();
-			
-			
 		}
 
 		if(g.vertices.size() == 2)
