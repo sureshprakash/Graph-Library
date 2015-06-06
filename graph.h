@@ -1,16 +1,38 @@
-/*
-
-	Warning: This graph implementation is not complete. Suddenly, all set<T> were converted to multiset<T>. However, the entire code was written considering set in mind. So, careful using the code
-*/
-
 #ifndef _GRAPH_H
 #define _GRAPH_H
 
 #include <algorithm>
 #include <cstdio>
 #include <set>
+#include <vector>
 
 using namespace std;
+
+// #define DEBUG
+
+template <class T>
+class Edge
+{
+	public:
+		T src, dest;
+		int cost;
+		
+		Edge(T src, T dest, int cost) : src(src), dest(dest), cost(cost)
+		{
+		}
+		
+		Edge(const Edge &e)
+		{
+			this->operator=(e);
+		}
+		
+		void operator=(const Edge &e)
+		{
+			src = e.src;
+			dest = e.src;
+			cost = e.cost;
+		}
+};
 
 template <class T>
 class Graph
@@ -22,7 +44,9 @@ class Graph
 			private:
 				T label;
 				multiset<pair<Vertex *, int> > adj;
-				multiset<Vertex *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed
+				multiset<Vertex *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed. It also helps to find the indegree 
+				
+				typename multiset<pair<Vertex *, int> >::iterator findVertex(Vertex *dest) const;
 	
 			public:
 				Vertex(T label);
@@ -33,15 +57,21 @@ class Graph
 	
 				bool checkLabel(T label) const;
 				multiset<pair<Vertex *, int> > getAdjacentNodes() const;
+				multiset<Vertex *> getReverseNodes() const;
 	
 				void addEdge(Vertex *dest, int cost);
 				bool removeEdge(Vertex *dest, int cost);
 				bool removeEdge(Vertex *dest);
 				void addEdgesInBatch(multiset<pair<Vertex *, int> > new_adj);
+				
+				bool edgeExists(Vertex *dest) const;
 				bool edgeExists(Vertex *dest, int cost) const;
+				
+				unsigned int countEdge(Vertex *dest) const;
 				unsigned int countEdge(Vertex *dest, int cost) const;
 	
 				void changeAdjacent(Vertex *dest);
+				void removeFromReverse(Vertex *dest);
 		};
 
 		set<Vertex *> vertices;
@@ -60,8 +90,11 @@ class Graph
 		bool addEdge(T head, T tail, int cost = 1);
 		bool removeEdge(T head, T tail, int cost = 1);
 		
-		bool edgeExists(T head, T tail, int cost = 1) const;
-		int countEdge(T head, T tail, int cost = 1) const;
+		int countEdge(T head, T tail) const;
+		int countEdge(T head, T tail, int cost) const;
+		
+		bool edgeExists(T head, T tail) const;
+		bool edgeExists(T head, T tail, int cost) const;
 		
 		friend ostream &operator<<(ostream &out, const Graph &g)
 		{	
@@ -79,6 +112,22 @@ class Graph
 				out << "\b\b " << endl;
 			}
 			
+			#ifdef DEBUG
+			for(typename multiset<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
+			{
+				multiset<Vertex *> nbh = (*v)->getReverseNodes();
+					
+				out << (*v)->getLabel() << "(" << nbh.size() << " nodes) --->  ";
+				
+				for(typename multiset<Vertex *>::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
+				{
+					out << (*adj)->getLabel() << ", ";
+				}
+				
+				out << "\b\b " << endl;
+			}
+			#endif
+			
 			return out;
 		}
 		
@@ -89,9 +138,9 @@ class Graph
 		bool mergeVertices(T first, T second, T new_label);
 		
 		T pickRandomVertex() const;
-		pair<T, T> pickRandomEdge() const;
+		Edge<T> * pickRandomEdge() const;
 		
-		int findMinCut();
+		int minCut();
 };
 
 
@@ -133,6 +182,26 @@ multiset<pair<typename Graph<T>::Vertex *, int> > Graph<T>::Vertex::getAdjacentN
 }
 
 template <class T>
+multiset<typename Graph<T>::Vertex *> Graph<T>::Vertex::getReverseNodes() const
+{
+	return rev;
+}
+
+template <class T>
+typename multiset<pair<typename Graph<T>::Vertex *, int> >::iterator Graph<T>::Vertex::findVertex(Graph<T>::Vertex *dest) const
+{
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->first == dest)
+		{
+			return itr;
+		}
+	}
+		
+	return adj.end();
+}
+
+template <class T>
 bool Graph<T>::Vertex::checkLabel(T label) const
 {
 	return (label == this->label);
@@ -167,16 +236,7 @@ bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest, int cost)
 template <class T>
 bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
 {
-	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = adj.end();
-	
-	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
-	{
-		if(itr->first == dest)
-		{
-			pos = itr;
-			break;
-		}
-	}
+	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = findVertex(dest);
 	
 	if(pos == adj.end())
 	{
@@ -195,7 +255,7 @@ void Graph<T>::Vertex::addEdgesInBatch(multiset<pair<Graph<T>::Vertex *, int> > 
 	// adj.insert() is not used intentionally because, backword pointers are needed for deletion
 	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator v = new_adj.begin(); v != new_adj.end(); v++)
 	{
-		addEdge(*v);
+		addEdge(v->first, v->second);
 	}
 }
 
@@ -212,17 +272,60 @@ unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest, int cost) const
 }
 
 template <class T>
+bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest) const
+{
+	return findVertex(dest) != adj.end();
+}
+
+template <class T>
+unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest) const
+{
+	unsigned int count = 0;
+	
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->first == dest)
+		{
+			count++;
+		}
+	}
+		
+	return count;
+}
+
+template <class T>
 void Graph<T>::Vertex::changeAdjacent(Graph<T>::Vertex *dest)
 {
 	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
 	{
-		typename multiset<Graph<T>::Vertex *>::iterator fd = (*v)->adj.find(this);
+		typename multiset<pair<Graph<T>::Vertex *, int> >::iterator fd = (*v)->findVertex(this);
 		if(fd != (*v)->adj.end())
 		{
-			(*v)->adj.erase(fd);
-			(*v)->adj.insert(dest);
+			(*v)->addEdge(dest, fd->second);
+			(*v)->removeEdge(fd->first, fd->second);
 		}
 	}
+}
+
+template <class T>
+void Graph<T>::Vertex::removeFromReverse(Graph<T>::Vertex *dest)
+{
+	vector<typename multiset<Graph<T>::Vertex *>::iterator> vec;
+	
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
+	{
+		if(*v == dest)
+		{
+			vec.push_back(v);
+		}
+	}
+	
+	const int sz = vec.size();
+	
+	for(int i = 0; i < sz; i++)
+	{
+		rev.erase(vec[i]);
+	} 
 }
 
 template <class T>
@@ -251,9 +354,20 @@ template <class T>
 void Graph<T>::operator=(const Graph<T> &g)
 {
 	directed = g.directed;
-	for(typename multiset<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
+
+	for(typename set<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 	{
-		vertices.insert(*v);
+		vertices.insert(new Vertex((*v)->getLabel()));
+	}
+	
+	for(typename set<Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
+	{
+		multiset<pair<Graph<T>::Vertex *, int> > adj = (*v)->getAdjacentNodes();
+		
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			(*findVertex((*v)->getLabel()))->addEdge(*findVertex(a->first->getLabel()), a->second);
+		}
 	}
 }
 
@@ -393,11 +507,44 @@ int Graph<T>::countEdge(T head, T tail, int cost) const
 
 
 template <class T>
+bool Graph<T>::edgeExists(T head, T tail) const
+{
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == vertices.end()) || (tl == vertices.end()))
+	{
+		return false;
+	}
+	
+	return (*hd)->edgeExists(*tl);
+}
+
+template <class T>
+int Graph<T>::countEdge(T head, T tail) const
+{
+	typename set<Graph<T>::Vertex *>::iterator hd = findVertex(head);
+	typename set<Graph<T>::Vertex *>::iterator tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == vertices.end()) || (tl == vertices.end()))
+	{
+		return -1;
+	}
+	
+	return (*hd)->countEdge(*tl);
+}
+
+template <class T>
 void Graph<T>::removeSelfLoops()
 {
 	for(typename set<Graph<T>::Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
-	{	
-		removeEdge((*v)->getLabel(), (*v)->getLabel());
+	{
+		while(edgeExists((*v)->getLabel(), (*v)->getLabel()))
+		{
+			(*v)->removeEdge(*v);
+		}
 	}
 }
 
@@ -428,11 +575,13 @@ bool Graph<T>::mergeVertices(T first, T second, T new_label)
 	
 	(*ft)->setLabel(new_label);
 	(*ft)->addEdgesInBatch((*sd)->getAdjacentNodes());
-	
+
 	(*sd)->changeAdjacent(*ft);
 	
 	delete (*sd);
 	vertices.erase(sd);
+
+	(*ft)->removeFromReverse(*sd);
 	
 	return true;
 }
@@ -448,10 +597,10 @@ T Graph<T>::pickRandomVertex() const
 }
 
 template <class T>
-pair<T, T> Graph<T>::pickRandomEdge() const
+Edge<T> * Graph<T>::pickRandomEdge() const
 {
 	Vertex *hd;
-	multiset<Graph<T>::Vertex *> adj;
+	multiset<pair<Graph<T>::Vertex *, int> > adj;
 	int cnt = 0;
 	const int double_num_vertices = 4 * vertices.size();
 	
@@ -465,21 +614,25 @@ pair<T, T> Graph<T>::pickRandomEdge() const
 	if(adj.size() == 0)
 	{
 		cout << "Adjacency list empty" << endl;
+		return NULL;
 	}
 		
 	int rnd = rand() % adj.size();
-	typename multiset<Graph<T>::Vertex *>::const_iterator it(adj.begin());
+	typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator it(adj.begin());
 	advance(it, rnd);
 	
-	Vertex *tl = *it;
+	Vertex *tl = it->first;
 	
-	return make_pair(hd->getLabel(), tl->getLabel());
+	return new Edge<T>(hd->getLabel(), tl->getLabel(), it->second);
 }
 
+/*
+	TODO: This method is not completely tested
+*/
 template <class T>
-int Graph<T>::findMinCut()
+int Graph<T>::minCut()
 {
-	int rep = 2500;
+	int rep = 5;
 	int min = vertices.size() + 2;
 	
 	for(int i = 0; i < rep; i++)
@@ -488,13 +641,23 @@ int Graph<T>::findMinCut()
 		
 		srand(i);
 
+		g.removeSelfLoops();
+
 		while(g.vertices.size() > 2)
 		{		
-			pair<char, char> rn = g.pickRandomEdge();
-		
-			g.mergeVertices(rn.first, rn.second, rn.first);
-		
+			Edge<T> * rn = g.pickRandomEdge();
+			
+			if(rn == NULL)
+			{
+				continue;
+			}
+			
+			cout << "Merging " << rn->src << " and " << rn->dest << endl;
+			
+			g.mergeVertices(rn->src, rn->dest, rn->src);
 			g.removeSelfLoops();
+			
+			cout << g << endl;
 		}
 
 		if(g.vertices.size() == 2)
