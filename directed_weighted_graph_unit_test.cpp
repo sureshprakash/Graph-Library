@@ -124,9 +124,9 @@ int main(int argc, char *argv[])
 	cout << "D, D = " << g.countEdge('D', 'D') << endl;
 	cout << "E, D = " << g.countEdge('E', 'D') << endl;
 
-	g.mergeVertices('A', 'B', 'A');
+	g.mergeVertices('A', 'B', 'E');
 	
-	cout << "----------------------------- A and B are merged to A -------------------" << endl;
+	cout << "----------------------------- A and B are merged to E -------------------" << endl;
 	cout << g << endl;
 		
 	g.removeSelfLoops();
