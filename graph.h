@@ -121,6 +121,19 @@ class Graph
 		
 		vector<T> topologicalSort();
 		
+		vector<T> dfs();
+		vector<T> dfs(T start);
+		
+		vector<T> bfs();
+		vector<T> bfs(T start);
+		
+		map<T, unsigned int> hop_distance(T from);
+		
+		bool isDirected();
+		bool isConnected();
+		bool isAcyclic();
+		bool isSimple();
+		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
 			for(typename map<T, Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
@@ -661,6 +674,248 @@ vector<T> Graph<T>::topologicalSort()
 	}
 	
 	return res;
+}
+
+template <class T>
+vector<T> Graph<T>::dfs()
+{
+	vector<T> v;
+	
+	if(vertices.size() == 0)
+	{
+		return v;
+	}
+	
+	return dfs(vertices.begin()->first);
+}
+
+template <class T>
+vector<T> Graph<T>::dfs(T start)
+{
+	vector<T> res;
+	Vertex *vtx = findVertex(start);
+
+	if(vtx == NULL)
+	{
+		return res;
+	}	
+	
+	// Create and initialize table
+	map<T, bool> visited;
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	stack<Vertex *> stk;
+	
+	stk.push(vtx);
+	
+	while(!stk.empty())
+	{
+		vtx = stk.top();
+		stk.pop();
+		
+		if(!visited[vtx->getLabel()])
+		{
+			res.push_back(vtx->getLabel());
+			visited[vtx->getLabel()] = true;
+	
+			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				stk.push(a->first);
+			}
+		}
+	}
+	
+	return res;
+}
+		
+template <class T>
+vector<T> Graph<T>::bfs()
+{
+	vector<T> v;
+	
+	if(vertices.size() == 0)
+	{
+		return v;
+	}
+	
+	return bfs(vertices.begin()->first);
+}
+
+
+template <class T>
+vector<T> Graph<T>::bfs(T start)
+{
+	vector<T> res;
+	Vertex *vtx = findVertex(start);
+
+	if(vtx == NULL)
+	{
+		return res;
+	}	
+	
+	// Create and initialize table
+	map<T, bool> visited;
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	queue<Vertex *> q;
+	
+	q.push(vtx);
+	
+	while(!q.empty())
+	{
+		vtx = q.front();
+		q.pop();
+		
+		if(!visited[vtx->getLabel()])
+		{
+			res.push_back(vtx->getLabel());
+			visited[vtx->getLabel()] = true;
+	
+			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				q.push(a->first);
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
+map<T, unsigned int> Graph<T>::hop_distance(T from)
+{
+	map<T, unsigned int> res;
+	Vertex *vtx = findVertex(from);
+
+	if(vtx == NULL)
+	{
+		return res;
+	}	
+	
+	// Create and initialize table
+	map<T, bool> visited;
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	queue<pair<Vertex *, unsigned int> > q;
+	
+	q.push(make_pair(vtx, 0));
+	
+	while(!q.empty())
+	{
+		pair<Vertex *, unsigned int> pr = q.front();
+		q.pop();
+		
+		if(!visited[pr.first->getLabel()])
+		{
+			res[pr.first->getLabel()] = pr.second;
+			visited[pr.first->getLabel()] = true;
+	
+			multiset<pair<Graph<T>::Vertex *, int> > adj = pr.first->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				q.push(make_pair(a->first, pr.second + 1));
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
+bool Graph<T>::isDirected()
+{
+	return directed;
+}
+
+template <class T>
+bool Graph<T>::isConnected()
+{
+	// TODO: Have to implement floyd-warshal
+	return true;
+}
+
+template <class T>
+bool Graph<T>::isAcyclic()
+{
+	Vertex *ft = findFirstVertexWithIndegreeZero();
+	
+	// Cycle exists
+	if(ft == NULL)
+	{
+		return false;
+	}	
+	
+	queue<Vertex *> q;
+	unsigned int cnt = 0;
+	const unsigned int sz = vertices.size();
+	
+	// Create and initialize table
+	map<T, unsigned int> indegree_table;
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		indegree_table[itr->first] = itr->second->indegree();
+	}
+	
+	q.push(ft);
+	
+	while(cnt < sz)
+	{
+		if(q.empty())
+		{
+			return false;
+		}
+		
+		ft = q.front();
+		q.pop();
+
+		cnt++;		
+		
+		multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			indegree_table[a->first->getLabel()]--;
+			
+			if(indegree_table[a->first->getLabel()] == 0)
+			{
+				q.push(a->first);
+			}
+		}
+	}
+	
+	return true;
+}
+
+template <class T>
+bool Graph<T>::isSimple()
+{
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		if(itr->second->edgeExists(findVertex(itr->first)))
+		{
+			return false;
+		}
+		
+		for(typename map<T, Graph<T>::Vertex *>::iterator it = vertices.begin(); it != vertices.end(); it++)
+		{
+			if(itr->second->countEdge(findVertex(it->first)) > 1)
+			{
+				return false;
+			}
+		}
+	}
+	
+	return true;
 }
 
 template <class T>
