@@ -609,7 +609,7 @@ Edge<T> * Graph<T>::pickRandomEdge() const
 		hd = *(findVertex(pickRandomVertex()));
 		adj = hd->getAdjacentNodes();
 		cnt ++;
-	} while((adj.size() != 0) && (cnt < double_num_vertices));
+	} while((adj.size() == 0) && (cnt < double_num_vertices));
 
 	if(adj.size() == 0)
 	{
@@ -626,13 +626,15 @@ Edge<T> * Graph<T>::pickRandomEdge() const
 	return new Edge<T>(hd->getLabel(), tl->getLabel(), it->second);
 }
 
-/*
-	TODO: This method is not completely tested
-*/
 template <class T>
 int Graph<T>::minCut()
 {
-	int rep = 5;
+	if(directed)
+	{
+		return -1;
+	}
+	
+	int rep = 2500;
 	int min = vertices.size() + 2;
 	
 	for(int i = 0; i < rep; i++)
@@ -649,15 +651,11 @@ int Graph<T>::minCut()
 			
 			if(rn == NULL)
 			{
-				continue;
+				break;
 			}
-			
-			cout << "Merging " << rn->src << " and " << rn->dest << endl;
 			
 			g.mergeVertices(rn->src, rn->dest, rn->src);
 			g.removeSelfLoops();
-			
-			cout << g << endl;
 		}
 
 		if(g.vertices.size() == 2)
