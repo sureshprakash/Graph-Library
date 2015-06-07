@@ -3,12 +3,16 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cmath>
 #include <set>
 #include <map>
 #include <vector>
+#include <list>
 #include <queue>
 #include <stack>
 #include <iostream>
+
+#include "disjoint_set.h"
 
 using namespace std;
 
@@ -74,6 +78,9 @@ class Graph
 				unsigned int countEdge(Vertex *dest);
 				unsigned int countEdge(Vertex *dest, int cost);
 				
+				int edgeCost(Vertex *dest);
+				vector<int> edgeCosts(Vertex *dest);
+				
 				int indegree();
 				int outdegree();
 	
@@ -86,7 +93,7 @@ class Graph
 		
 		Vertex * findVertex(T label);
 		
-		Vertex * findFirstVertexWithIndegreeZero();
+		vector<Vertex *> findVerticesWithIndegreeZero();
 	
 	public:
 		Graph(bool directed);
@@ -110,6 +117,9 @@ class Graph
 		int indegree(T label);
 		int outdegree(T label);
 		
+		unsigned int numVertices();
+		unsigned int numEdges();
+		
 		void removeSelfLoops();
 		
 		bool mergeVertices(T first, T second, T new_label);
@@ -128,14 +138,27 @@ class Graph
 		vector<T> bfs(T start);
 		
 		map<T, unsigned int> hop_distance(T from);
+
+		pair<vector<T>, vector<vector<int> > > adjacencyList();
+		pair<vector<T>, vector<vector<bool> > > connectivityList();
 		
 		bool isDirected();
+		bool isWeighted();
 		bool isConnected();
 		bool isAcyclic();
 		bool isSimple();
 		
+		map<T, int> assignVertexNumbers();
+		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
+			out << (g.isDirected()? "Directed, ": "Undirected, ");
+			out << (g.isWeighted()? "Weighted, ": "Unweighted, ");
+			out << (g.isAcyclic()? "Acyclic, ": "Cyclic, ");
+			out << (g.isConnected()? "Connected, ": "Disconnected, ");
+			out << (g.isSimple()? "Simple ": "Non simple ");
+			out << "graph" << endl;			
+/*
 			for(typename map<T, Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 			{	
 				out << v->second->getLabel() << " --->  ";
@@ -165,7 +188,7 @@ class Graph
 				out << "\b\b " << endl;
 			}
 			#endif
-			
+*/			
 			return out;
 		}
 
@@ -322,6 +345,36 @@ unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest)
 }
 
 template <class T>
+int Graph<T>::Vertex::edgeCost(Graph<T>::Vertex *dest)
+{
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->first == dest)
+		{
+			return itr->second;
+		}
+	}
+	
+	return INFINITY;
+}
+
+template <class T>
+vector<int> Graph<T>::Vertex::edgeCosts(Graph<T>::Vertex *dest)
+{
+	vector<int> res;
+	
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->first == dest)
+		{
+			res.push_back(itr->second);
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
 int Graph<T>::Vertex::indegree()
 {
 	return rev.size();
@@ -445,17 +498,38 @@ int Graph<T>::outdegree(T label)
 }
 
 template <class T>
-typename Graph<T>::Vertex * Graph<T>::findFirstVertexWithIndegreeZero()
+unsigned int Graph<T>::numVertices()
 {
+	return vertices.size();
+}
+
+template <class T>
+unsigned int Graph<T>::numEdges()
+{
+	unsigned int cnt = 0;
+	
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		cnt += itr->second->outdegree();
+	}
+	
+	return directed? cnt: (cnt >> 1);
+}
+
+template <class T>
+vector<typename Graph<T>::Vertex *> Graph<T>::findVerticesWithIndegreeZero()
+{
+	vector<typename Graph<T>::Vertex *> res;
+	
 	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		if(itr->second->indegree() == 0)
 		{
-			return itr->second;
+			res.push_back(itr->second);
 		}
 	}
 	
-	return NULL;
+	return res;
 }
 
 template <class T>
@@ -578,7 +652,6 @@ int Graph<T>::countEdge(T head, T tail, int cost)
 	return hd->countEdge(tl, cost);
 }
 
-
 template <class T>
 bool Graph<T>::edgeExists(T head, T tail)
 {
@@ -629,9 +702,10 @@ vector<T> Graph<T>::topologicalSort()
 		throw "Not a directed graph";
 	}
 	
-	Vertex *ft = findFirstVertexWithIndegreeZero();
+	vector<Vertex *> l = findVerticesWithIndegreeZero();
+	unsigned int k = 0;
 	
-	if(ft == NULL)
+	if(l.size() == 0)
 	{
 		throw "Not an acyclic graph";
 	}	
@@ -647,16 +721,21 @@ vector<T> Graph<T>::topologicalSort()
 		indegree_table[itr->first] = itr->second->indegree();
 	}
 	
-	q.push(ft);
+	q.push(l[k++]);
 	
 	while(res.size() < sz)
 	{
 		if(q.empty())
 		{
-			throw "Not an acyclic graph";
+			if(k >= l.size())
+			{
+				throw "Not an acyclic graph";
+			}
+			
+			q.push(l[k++]);
 		}
 		
-		ft = q.front();
+		Vertex *ft = q.front();
 		q.pop();
 		
 		res.push_back(ft->getLabel());
@@ -745,7 +824,6 @@ vector<T> Graph<T>::bfs()
 	return bfs(vertices.begin()->first);
 }
 
-
 template <class T>
 vector<T> Graph<T>::bfs(T start)
 {
@@ -833,63 +911,283 @@ map<T, unsigned int> Graph<T>::hop_distance(T from)
 }
 
 template <class T>
+map<T, int> Graph<T>::assignVertexNumbers()
+{
+	map<T, int> res;
+	
+	int cnt = 0;
+	
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		res[itr->first] = ++cnt;
+	}
+	
+	return res;
+}
+
+template <class T>
+pair<vector<T>, vector<vector<int> > > Graph<T>::adjacencyList()
+{
+	vector<T> v;
+	vector<vector<int> > res;
+	
+	if(isSimple())
+	{
+		for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			v.push_back(itr->first);
+		}
+	
+		for(typename vector<T>::iterator i = v.begin(); i != v.end(); i++)
+		{
+			vector<int> l(v.size());
+		
+			for(typename vector<T>::iterator j = v.begin(); j != v.end(); j++)
+			{
+				if(*i == *j)
+				{
+					l.push_back(0);
+				}
+				else
+				{
+					l.push_back(findVertex(*i)->edgeCost(findVertex(*j)));
+				}
+			}
+		
+			res.push_back(l);
+		}
+	}
+		
+	return make_pair(v, res);
+}
+
+template <class T>
+pair<vector<T>, vector<vector<bool> > > Graph<T>::connectivityList()
+{
+	vector<T> v;
+	vector<vector<bool> > res;
+	
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		v.push_back(itr->first);
+	}
+
+	for(typename vector<T>::iterator i = v.begin(); i != v.end(); i++)
+	{
+		vector<bool> l;
+
+		for(typename vector<T>::iterator j = v.begin(); j != v.end(); j++)
+		{
+			if(*i == *j)
+			{
+				l.push_back(true);
+			}
+			else
+			{
+				l.push_back(findVertex(*i)->edgeExists(findVertex(*j)));
+			}
+		}
+	
+		res.push_back(l);
+	}
+
+	return make_pair(v, res);
+}
+
+template <class T>
 bool Graph<T>::isDirected()
 {
 	return directed;
 }
 
 template <class T>
+bool Graph<T>::isWeighted()
+{
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		multiset<pair<Graph<T>::Vertex *, int> > adj = itr->second->getAdjacentNodes();
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			if(a->second != 1)
+			{	
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+template <class T>
 bool Graph<T>::isConnected()
 {
-	// TODO: Have to implement floyd-warshal
+	if(numVertices() == 0)
+	{
+		return true;
+	}
+	
+	if(directed)
+	{
+		pair<vector<T>, vector<vector<bool> > > pr = connectivityList();
+		vector<vector<bool> > curr_matrix = pr.second;
+		vector<vector<bool> > prev_matrix;
+		const unsigned int n = numVertices();
+		
+		for(int k = 0; k < n; k++)
+		{
+			prev_matrix = curr_matrix;
+			
+			for(int i = 0; i < n; i++)
+			{
+				for(int j = 0; j < n; j++)
+				{
+					curr_matrix[i][j] = prev_matrix[i][j] || (prev_matrix[i][k] && prev_matrix[k][j]);
+				}
+			}
+		}
+		
+		for(int i = 0; i < n; i++)
+		{
+			for(int j = 0; j < n; j++)
+			{
+				if(!curr_matrix[i][j])
+				{
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+		
+	// Undirected graph
+	Vertex *vtx = vertices.begin()->second;
+
+	// Create and initialize table
+	map<T, bool> visited;
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	stack<Vertex *> stk;
+	
+	stk.push(vtx);
+	
+	while(!stk.empty())
+	{
+		vtx = stk.top();
+		stk.pop();
+		
+		if(!visited[vtx->getLabel()])
+		{
+			visited[vtx->getLabel()] = true;
+	
+			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				stk.push(a->first);
+			}
+		}
+	}
+	
+	for(typename map<T, bool>::iterator itr = visited.begin(); itr != visited.end(); itr++)
+	{
+		if(!itr->second)
+		{
+			return false;
+		}
+	}
+	
 	return true;
 }
 
 template <class T>
 bool Graph<T>::isAcyclic()
 {
-	Vertex *ft = findFirstVertexWithIndegreeZero();
-	
-	// Cycle exists
-	if(ft == NULL)
+	if(directed)
 	{
-		return false;
-	}	
-	
-	queue<Vertex *> q;
-	unsigned int cnt = 0;
-	const unsigned int sz = vertices.size();
-	
-	// Create and initialize table
-	map<T, unsigned int> indegree_table;
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
-	{
-		indegree_table[itr->first] = itr->second->indegree();
-	}
-	
-	q.push(ft);
-	
-	while(cnt < sz)
-	{
-		if(q.empty())
+		vector<Vertex *> l = findVerticesWithIndegreeZero();
+		unsigned int k = 0;
+		unsigned int cnt = 0;
+			
+		// Cycle exists
+		if(l.size() == 0)
 		{
 			return false;
-		}
-		
-		ft = q.front();
-		q.pop();
-
-		cnt++;		
-		
-		multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
-		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		}	
+	
+		queue<Vertex *> q;
+		const unsigned int sz = vertices.size();
+	
+		// Create and initialize table
+		map<T, int> indegree_table;
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
-			indegree_table[a->first->getLabel()]--;
-			
-			if(indegree_table[a->first->getLabel()] == 0)
+			indegree_table[itr->first] = itr->second->indegree();
+		}
+	
+		q.push(l[k++]);
+	
+		while(cnt < sz)
+		{
+			if(q.empty())
 			{
-				q.push(a->first);
+				if(k >= l.size())
+				{
+					return false;
+				}
+				
+				q.push(l[k++]);
 			}
+		
+			Vertex *ft = q.front();
+			q.pop();
+
+			cnt++;		
+		
+			indegree_table[ft->getLabel()]--; // This is done to denote that the vertex is already processed
+			
+			multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				indegree_table[a->first->getLabel()]--;
+			
+				if(indegree_table[a->first->getLabel()] == 0)
+				{
+					q.push(a->first);
+				}
+			}
+		}
+	
+		return true;
+	}
+	
+	// Undirected graph
+	
+	if(numEdges() > numVertices() - 1)
+	{
+		return false;
+	}
+	
+	Graph<T> g = *this;
+	map<T, int> m = g.assignVertexNumbers();
+	DisjointSet s(g.vertices.size());
+	
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = g.vertices.begin(); itr != g.vertices.end(); itr++)
+	{
+		multiset<pair<Graph<T>::Vertex *, int> > adj = itr->second->getAdjacentNodes();
+		
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator it = adj.begin(); it != adj.end(); it++)
+		{
+			if(s.connected(m[itr->second->getLabel()] - 1, m[it->first->getLabel()] - 1))
+			{
+				return false;
+			}
+			
+			s.join(m[itr->second->getLabel()] - 1, m[it->first->getLabel()] - 1);
+			itr->second->removeEdge(it->first);
+			it->first->removeEdge(itr->second);
 		}
 	}
 	

@@ -3,7 +3,7 @@ all:
 	./graph
 	
 clean:
-	rm -rf graph directed weighted topsort bfs_dfs
+	rm -rf graph directed weighted topsort bfs_dfs properties
 	find . -name '*~' -delete
 	
 test_directed:
@@ -21,6 +21,10 @@ test_topological:
 test_bfsdfs:
 	g++ bfs_dfs.cpp -o bfs_dfs -g
 	./bfs_dfs
+	
+test_properties:
+	g++ graph_properties.cpp -o properties -g
+	./properties
 	
 git: clean
 	git add *

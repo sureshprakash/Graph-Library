@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
 	cout << "Outdegree of D: " << g.outdegree('D') << endl;
 	cout << "Outdegree of E: " << g.outdegree('E') << endl;
 	cout << "Outdegree of F: " << g.outdegree('F') << endl;	
+	
+	cout << "Number of vertices: " << g.numVertices() << endl;
+	cout << "Number of edges: " << g.numEdges() << endl;
 
 	return 0;
 }
