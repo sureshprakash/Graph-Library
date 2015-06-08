@@ -2,15 +2,16 @@
 #define _GRAPH_H
 
 #include <algorithm>
-#include <cstdio>
+#include <cassert>
 #include <cmath>
-#include <set>
-#include <map>
-#include <vector>
-#include <list>
-#include <queue>
-#include <stack>
+#include <cstdio>
 #include <iostream>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <stack>
+#include <vector>
 
 #include "disjoint_set.h"
 
@@ -83,6 +84,8 @@ class Graph
 				
 				int indegree();
 				int outdegree();
+				
+				bool hasNegativeWeightedEdge();
 	
 				void changeAdjacent(Vertex *dest);
 				void removeFromReverse(Vertex *dest);
@@ -148,6 +151,19 @@ class Graph
 		bool isAcyclic();
 		bool isSimple();
 		
+		bool hasNegativeWeightedEdge();
+		
+		map<T, pair<T, int> > bfsShortestPath(T source);
+		map<T, pair<T, int> > topologicalShortestPath(T source);
+		map<T, pair<T, int> > dijkstraShortestPath(T source);
+		map<T, pair<T, int> > bellmanFordShortestPath(T source);
+		
+		map<T, pair<T, int> > shortestPath(T source);
+		pair<vector<T>, vector<vector<int> > > shortestPath();
+		
+		void printPath(ostream &out, map<T, pair<T, int> > path);
+		void printPath(ostream &out, pair<vector<T>, vector<vector<int> > > dist);
+		
 		map<T, int> assignVertexNumbers();
 		
 		friend ostream &operator<<(ostream &out, Graph &g)
@@ -158,7 +174,7 @@ class Graph
 			out << (g.isConnected()? "Connected, ": "Disconnected, ");
 			out << (g.isSimple()? "Simple ": "Non simple ");
 			out << "graph" << endl;			
-/*
+
 			for(typename map<T, Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 			{	
 				out << v->second->getLabel() << " --->  ";
@@ -188,7 +204,7 @@ class Graph
 				out << "\b\b " << endl;
 			}
 			#endif
-*/			
+			
 			return out;
 		}
 
@@ -355,7 +371,7 @@ int Graph<T>::Vertex::edgeCost(Graph<T>::Vertex *dest)
 		}
 	}
 	
-	return INFINITY;
+	return (int) INFINITY;
 }
 
 template <class T>
@@ -384,6 +400,20 @@ template <class T>
 int Graph<T>::Vertex::outdegree()
 {
 	return adj.size();
+}
+
+template <class T>
+bool Graph<T>::Vertex::hasNegativeWeightedEdge()
+{
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(itr->second < 0)
+		{
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 template <class T>
@@ -940,7 +970,7 @@ pair<vector<T>, vector<vector<int> > > Graph<T>::adjacencyList()
 	
 		for(typename vector<T>::iterator i = v.begin(); i != v.end(); i++)
 		{
-			vector<int> l(v.size());
+			vector<int> l;
 		
 			for(typename vector<T>::iterator j = v.begin(); j != v.end(); j++)
 			{
@@ -1214,6 +1244,372 @@ bool Graph<T>::isSimple()
 	}
 	
 	return true;
+}
+
+template <class T>
+bool Graph<T>::hasNegativeWeightedEdge()
+{
+	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		if(itr->second->hasNegativeWeightedEdge())
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+template <class T>
+map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source)
+{
+	map<T, pair<T, int> > res;
+	
+	if(!isDirected() && !isWeighted())
+	{
+		Vertex *vtx = findVertex(source);
+
+		if(vtx != NULL)
+		{
+			// Create and initialize table
+			map<T, bool> visited;
+			for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+			{
+				visited[itr->first] = false;
+			}
+	
+			queue<pair<Vertex *, pair<T, int> > > q;
+	
+			q.push(make_pair(vtx, make_pair(source, 0)));
+	
+			while(!q.empty())
+			{
+				pair<Vertex *, pair<T, int> > pr = q.front();
+				q.pop();
+		
+				if(!visited[pr.first->getLabel()])
+				{
+					res[pr.first->getLabel()] = pr.second;
+					visited[pr.first->getLabel()] = true;
+	
+					multiset<pair<Graph<T>::Vertex *, int> > adj = pr.first->getAdjacentNodes();
+					for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+					{
+						q.push(make_pair(a->first, make_pair(pr.first->getLabel(), pr.second.second + 1)));
+					}
+				}
+			}
+			
+			for(typename map<T, bool>::iterator itr = visited.begin(); itr != visited.end(); itr++)
+			{
+				if(!itr->second)
+				{
+					res[itr->first] = make_pair(itr->first, INFINITY);
+				}
+			}
+		}	
+	}
+	
+	return res;
+}
+
+template <class T>
+map<T, pair<T, int> > Graph<T>::topologicalShortestPath(T source)
+{
+	map<T, pair<T, int> > res;
+	
+	if(isDirected() && isAcyclic())
+	{
+		if(findVertex(source) != NULL)
+		{
+			vector<T> ord = topologicalSort();
+			const unsigned int sz = ord.size();
+			int pos = -1;
+			
+			assert(sz == numVertices());
+			
+			for(int i = 0; i < sz; i++)
+			{
+				if(ord[i] == source)
+				{
+					pos = i;
+					break;
+				}
+			}
+			
+			assert(pos != -1);
+			
+			for(int i = 0; i < sz; i++)
+			{
+				res[ord[i]] = make_pair(ord[i], (int) INFINITY);
+			}
+			
+			res[ord[pos]] = make_pair(ord[pos], 0);
+			
+			for(int i = pos; i < sz; i++)
+			{
+				Vertex *cur = findVertex(ord[i]);
+				
+				assert(cur != NULL);
+				
+				multiset<pair<Graph<T>::Vertex *, int> > adj = cur->getAdjacentNodes();
+				for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+				{
+					// First condition is checked to avoid overflow
+					if((res[ord[i]].second != (int) INFINITY) && (res[ord[i]].second + a->second < res[a->first->getLabel()].second))
+					{
+						res[a->first->getLabel()] = make_pair(ord[i], res[ord[i]].second + a->second);
+					}
+				}
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
+map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
+{
+	map<T, pair<T, int> > res;
+	
+	if(!hasNegativeWeightedEdge())
+	{
+		if(findVertex(source) != NULL)
+		{
+			map<T, bool> visited;
+			
+			for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+			{
+				res[itr->first] = make_pair(itr->first, (int) INFINITY);
+				visited[itr->first] = false;
+			}
+			
+			res[source] = make_pair(source, 0);
+
+			while(1)
+			{
+				int min_dist = INFINITY;
+				T curr;
+				
+				for(typename map<T, pair<T, int> >::iterator itr = res.begin(); itr != res.end(); itr++)
+				{
+					if(!visited[itr->first] && (itr->second.second < min_dist))
+					{
+						min_dist = itr->second.second;
+						curr = itr->first;
+					}
+				}
+				
+				if(min_dist == (int) INFINITY)
+				{
+					break;
+				}
+				
+				visited[curr] = true;
+				
+				multiset<pair<Vertex *, int> > adj = findVertex(curr)->getAdjacentNodes();
+				for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+				{
+					if(res[curr].second + a->second < res[a->first->getLabel()].second)
+					{
+						res[a->first->getLabel()] = make_pair(curr, res[curr].second + a->second);
+					}
+				}
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
+map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source)
+{
+	map<T, pair<T, int> > emp, res;
+	int iter = numVertices() - 1;
+	
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		res[itr->first] = make_pair(itr->first, (int) INFINITY);
+	}
+	
+	res[source] = make_pair(source, 0);
+	
+	while(iter--)
+	{
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
+			for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				// First condition is checked to avoid overflow
+				if((res[itr->first].second != (int) INFINITY) && (res[itr->first].second + a->second < res[a->first->getLabel()].second))
+				{
+					res[a->first->getLabel()] = make_pair(itr->first, res[itr->first].second + a->second);
+				}
+			}
+		}
+	}	
+	
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
+		for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			// First condition is checked to avoid overflow
+			if((res[itr->first].second != (int) INFINITY) && (res[itr->first].second + a->second < res[a->first->getLabel()].second))
+			{
+				// Graph contains negative cycle(s)
+				return emp;
+			}
+		}
+	}
+	
+	return res;
+}
+
+template <class T>
+map<T, pair<T, int> > Graph<T>::shortestPath(T source)
+{
+	map<T, pair<T, int> > res;
+	
+	// Invalid source vertex
+	if(findVertex(source) == NULL)
+	{
+		return res;
+	}
+	
+	res = bfsShortestPath(source);
+	
+	if(res.size() != 0)
+	{
+		return res;
+	}
+	
+	res = topologicalShortestPath(source);
+	
+	if(res.size() != 0)
+	{
+		return res;
+	}
+	
+	res = dijkstraShortestPath(source);
+	
+	if(res.size() != 0)
+	{
+		return res;
+	}
+	
+	// If the graph has negative cycles, it will be handled by Bellman-Ford algorithm
+	return bellmanFordShortestPath(source);
+}
+
+template <class T>
+pair<vector<T>, vector<vector<int> > > Graph<T>::shortestPath()
+{
+	if(isSimple())
+	{
+		pair<vector<T>, vector<vector<int> > > pr = adjacencyList();
+		vector<vector<int> > curr_matrix = pr.second;
+		vector<vector<int> > prev_matrix;
+		const unsigned int n = numVertices();
+	
+		for(int k = 0; k < n; k++)
+		{
+			prev_matrix = curr_matrix;
+		
+			for(int i = 0; i < n; i++)
+			{
+				for(int j = 0; j < n; j++)
+				{
+					// To avoid overflow
+					if((prev_matrix[i][k] == (int) INFINITY) || (prev_matrix[k][j] == (int) INFINITY))
+					{
+						curr_matrix[i][j] = prev_matrix[i][j];
+					}
+					else
+					{
+						curr_matrix[i][j] = min(prev_matrix[i][j], prev_matrix[i][k] + prev_matrix[k][j]);
+					}
+				}
+			}
+		}
+	
+		return make_pair(pr.first, curr_matrix);
+	}
+	
+	return make_pair(vector<T>(), vector<vector<int> >());
+}
+
+template <class T>
+void Graph<T>::printPath(ostream &out, map<T, pair<T, int> > path)
+{
+	for(typename map<T, pair<T, int> >::iterator itr = path.begin(); itr != path.end(); itr++)
+	{
+		out << itr->first << " =====> ";
+		
+		if(itr->second.second == (int) INFINITY)
+		{
+			out << "(Unreachable)" << endl;
+		}
+		else
+		{
+			stack<T> stk;
+			
+			T curr = itr->first;
+			T prev;
+			
+			do
+			{
+				prev = curr;
+				stk.push(curr);
+				curr = path[curr].first;
+			}while(prev != curr);
+			
+			while(!stk.empty())
+			{
+				out << stk.top() << ", ";
+				stk.pop();
+			}
+			
+			out << "\b\b (" << itr->second.second << ")" << endl; 
+		}
+	}
+}
+
+template <class T>
+void Graph<T>::printPath(ostream &out, pair<vector<T>, vector<vector<int> > > dist)
+{
+	const int n = numVertices();
+	
+	assert(dist.first.size() == n);
+	
+	for(int i = 0; i < n; i++)
+	{
+		out << "\t" << i+1;
+	}
+	
+	out << endl;
+	
+	for(int i = 0; i < n; i++)
+	{
+		out << dist.first[i] << "(" << i+1 << ") | ";
+		
+		for(int j = 0; j < n; j++)
+		{
+			if(dist.second[i][j] == (int) INFINITY)
+			{
+				out << "\tinf";
+			}
+			else
+			{
+				out << "\t" << dist.second[i][j];
+			}
+		}
+		
+		out << endl;
+	}
 }
 
 template <class T>

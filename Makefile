@@ -3,7 +3,7 @@ all:
 	./graph
 	
 clean:
-	rm -rf graph directed weighted topsort bfs_dfs properties
+	rm -rf graph directed weighted topsort bfs_dfs properties shortest_path
 	find . -name '*~' -delete
 	
 test_directed:
@@ -25,6 +25,10 @@ test_bfsdfs:
 test_properties:
 	g++ graph_properties.cpp -o properties -g
 	./properties
+	
+test_shortest_path:
+	g++ shortest_path.cpp -o shortest_path -g
+	./shortest_path
 	
 git: clean
 	git add *
