@@ -168,6 +168,12 @@ class Graph
 		
 		map<T, int> assignVertexNumbers();
 		
+		vector<T> getVertices();
+		vector<pair<T, pair<T, int> > > getEdges();
+		
+		vector<vector<T> > getVerticesComponentwise();
+		vector<Graph<T> > getConnectedComponents();
+		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
 			out << (g.isDirected()? "Directed, ": "Undirected, ");
@@ -1679,6 +1685,118 @@ void Graph<T>::printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int
 		
 		out << endl;
 	}
+}
+
+template <class T>		
+vector<T> Graph<T>::getVertices()
+{
+	vector<T> res;
+	
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		res.push_back(itr->first);
+	}
+	
+	return res;
+}
+
+template <class T>
+vector<pair<T, pair<T, int> > > Graph<T>::getEdges()
+{
+	vector<pair<T, pair<T, int> > > res;
+	
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
+		
+		for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			res.push_back(make_pair(itr->first, make_pair(a->first->getLabel(), a->second)));
+		}
+	}
+		
+	return res;
+}
+
+template <class T>
+vector<vector<T> > Graph<T>::getVerticesComponentwise()
+{
+	vector<vector<T> > res;
+	map<T, bool> visited;
+	
+	if(isDirected())
+	{
+		return res;
+	}
+	
+	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	while(1)
+	{
+		T source;
+		bool unvisited = false;
+		
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			if(!visited[itr->first])
+			{
+				source = itr->first;
+				unvisited = true;
+				break;
+			}
+		}
+		
+		if(!unvisited)
+		{
+			break;
+		}
+		
+		vector<T> vlist = dfs(source);
+		
+		const int sz = vlist.size();
+		for(int i = 0; i < sz; i++)
+		{
+			visited[vlist[i]] = true;
+		}
+		
+		res.push_back(vlist);
+	}
+	
+	return res;
+}
+
+template <class T>
+vector<Graph<T> > Graph<T>::getConnectedComponents()
+{
+	vector<Graph<T> > res;
+	vector<vector<T> > vertices_compwise = getVerticesComponentwise();
+	
+	for(typename vector<vector<T> >::iterator i = vertices_compwise.begin(); i != vertices_compwise.end(); i++)
+	{
+		Graph<T> g(directed);
+		
+		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
+		{
+			g.addVertex(*j);
+		}
+		
+		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
+		{
+			multiset<pair<Vertex *, int> > adj = findVertex(*j)->getAdjacentNodes();
+			
+			for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				g.findVertex(*j)->addEdge(g.findVertex(a->first->getLabel()), a->second);
+			}
+		}
+		
+		res.push_back(g);
+	}
+	
+	return res;
 }
 
 template <class T>
