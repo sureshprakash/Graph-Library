@@ -36,6 +36,8 @@ int main()
 	g.addEdge(6, 3);
 	g.addEdge(6, 7);
 
+	cout << g << endl;
+
 	map<int, pair<int, int> > p;
 /*
 	p = g.bfsShortestPath(1);
@@ -53,9 +55,38 @@ int main()
 	p = g.shortestPath(1);
 	g.printPath(cout, p);
 	
-	pair<vector<int>, vector<vector<int> > > d;
+	pair<vector<int>, vector<vector<pair<int, int> > > >  d;
 	d = g.shortestPath();
+
 	g.printPath(cout, d);
+	
+	Graph<char> g1(false);
+	
+	g1.addVertex('a');
+	g1.addVertex('b');
+	g1.addVertex('c');
+	g1.addVertex('d');
+	g1.addVertex('e');
+	g1.addVertex('f');
+	g1.addVertex('g');
+	
+	g1.addEdge('a', 'b', 2);
+	g1.addEdge('a', 'c', 3);
+	g1.addEdge('a', 'd', 7);
+	g1.addEdge('b', 'e', 1);
+	g1.addEdge('b', 'd', 8);
+	g1.addEdge('c', 'd', 12);
+	g1.addEdge('d', 'e', 9);
+	g1.addEdge('d', 'f', 11);
+	g1.addEdge('d', 'g', 6);
+	g1.addEdge('c', 'f', 4);
+	g1.addEdge('g', 'f', 5);
+	g1.addEdge('e', 'g', 10);
+	
+	cout << g1 << endl;
+	
+	Graph<char> tree = g1.minimumSpanningTree();
+	cout << tree << endl;
 
 	return 0;
 }
