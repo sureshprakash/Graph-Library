@@ -43,6 +43,14 @@ class Edge
 		}
 };
 
+/*
+ * Source        : graph.h
+ * Description   : Implementation of Graph algorithms in one class
+ * Author        : Suresh. P
+ * Email         : sureshsonait@gmail.com
+ * Copyright     : This library is free to distribute provided that this comment part is not removed.
+ */
+
 template <class T>
 class Graph
 {
@@ -114,6 +122,10 @@ class Graph
 		
 		bool edgeExists(T head, T tail);
 		bool edgeExists(T head, T tail, int cost);
+		
+		bool pathExists(T start, T end);
+		
+		vector<int> edgeCosts(T head, T tail);
 		
 		void operator=(const Graph<T> &g);
 		
@@ -217,7 +229,6 @@ class Graph
 		}
 
 };
-
 
 template <class T>
 Graph<T>::Vertex::Vertex(T label) : label(label)
@@ -679,21 +690,6 @@ bool Graph<T>::edgeExists(T head, T tail, int cost)
 }
 
 template <class T>
-int Graph<T>::countEdge(T head, T tail, int cost)
-{
-	Vertex * hd = findVertex(head);
-	Vertex * tl = findVertex(tail);
-	
-	// One of the lables does not exist
-	if((hd == NULL) || (tl == NULL))
-	{
-		return -1;
-	}
-	
-	return hd->countEdge(tl, cost);
-}
-
-template <class T>
 bool Graph<T>::edgeExists(T head, T tail)
 {
 	Vertex * hd = findVertex(head);
@@ -709,6 +705,38 @@ bool Graph<T>::edgeExists(T head, T tail)
 }
 
 template <class T>
+vector<int> Graph<T>::edgeCosts(T head, T tail)
+{
+	vector<int> empty;
+	
+	Vertex * hd = findVertex(head);
+	Vertex * tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == NULL) || (tl == NULL))
+	{
+		return empty;
+	}
+	
+	return hd->edgeCosts(tl);
+}
+
+template <class T>
+int Graph<T>::countEdge(T head, T tail, int cost)
+{
+	Vertex * hd = findVertex(head);
+	Vertex * tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == NULL) || (tl == NULL))
+	{
+		return -1;
+	}
+	
+	return hd->countEdge(tl, cost);
+}
+
+template <class T>
 int Graph<T>::countEdge(T head, T tail)
 {
 	Vertex * hd = findVertex(head);
@@ -721,6 +749,53 @@ int Graph<T>::countEdge(T head, T tail)
 	}
 	
 	return hd->countEdge(tl);
+}
+
+template <class T>
+bool Graph<T>::pathExists(T start, T end)
+{
+	Vertex *st = findVertex(start);
+	Vertex *ed = findVertex(end);
+	
+	if((st == NULL) || (ed == NULL))
+	{
+		return false;
+	}
+	
+	// Create and initialize table
+	map<T, bool> visited;
+	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	{
+		visited[itr->first] = false;
+	}
+	
+	stack<Vertex *> stk;
+	
+	stk.push(st);
+	
+	while(!stk.empty())
+	{
+		Vertex *vtx = stk.top();
+		stk.pop();
+		
+		if(vtx->getLabel() == end)
+		{
+			return true;
+		}
+		
+		if(!visited[vtx->getLabel()])
+		{
+			visited[vtx->getLabel()] = true;
+	
+			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			{
+				stk.push(a->first);
+			}
+		}
+	}
+	
+	return false;
 }
 
 template <class T>
@@ -1820,7 +1895,7 @@ Graph<T> Graph<T>::minimumSpanningTree()
 
 			while(1)
 			{
-				int min_dist = INFINITY;
+				int min_dist = (int) INFINITY;
 				pair<T, T> curr;
 				
 				for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)

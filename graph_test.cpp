@@ -25,6 +25,5 @@ int main(int argc, char *argv[])
 	cout << g << endl;
 	cout << g.minCut() << endl;
 	
-	
 	return 0;
 }
