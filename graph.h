@@ -104,11 +104,14 @@ class Graph
 		Vertex * findVertex(T label);
 		
 		vector<Vertex *> findVerticesWithIndegreeZero();
+		void findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited);
 	
 	public:
 		Graph(bool directed);
 		Graph(const Graph<T> &g);
 		~Graph();
+
+		Graph<T> reverse();
 		
 		bool addVertex(T label);
 		bool removeVertex(T label);
@@ -183,7 +186,7 @@ class Graph
 		vector<pair<T, pair<T, int> > > getEdges();
 		
 		vector<vector<T> > getVerticesComponentwise();
-		vector<Graph<T> > getConnectedComponents();
+		vector<Graph<T> *> getConnectedComponents();
 		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
@@ -509,6 +512,30 @@ void Graph<T>::operator=(const Graph<T> &g)
 }
 
 template <class T>
+Graph<T> Graph<T>::reverse()
+{
+	Graph<T> g(directed);
+
+	for(typename map<T, Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	{
+		g.addVertex(v->first);
+	}
+	
+	for(typename map<T, Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	{
+		multiset<pair<Graph<T>::Vertex *, int> > adj = v->second->getAdjacentNodes(); // Unfortunately rev cannot be used because it does not contain weight information
+		
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		{
+			// Graph<T>::addEdge() is intentionally not called, because it might cause problems in case of undirected graph
+			g.findVertex(a->first->getLabel())->addEdge(g.findVertex(v->first), a->second);
+		}
+	}
+	
+	return g;
+}
+
+template <class T>
 typename Graph<T>::Vertex * Graph<T>::findVertex(T label)
 {
 	if(vertices.find(label) == vertices.end())
@@ -517,6 +544,27 @@ typename Graph<T>::Vertex * Graph<T>::findVertex(T label)
 	}
 	
 	return vertices[label];
+}
+
+template <class T>
+void Graph<T>::findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited)
+{
+	Vertex *vertex = findVertex(label);
+	assert(vertex != NULL);
+	
+	multiset<pair<Vertex *, int> > adj = vertex->getAdjacentNodes();
+	
+	visited[label] = true;
+	
+	for(typename multiset<pair<Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
+	{
+		if(!visited[itr->first->getLabel()])
+		{
+			findFinishOrder(itr->first->getLabel(), finished_vertices, visited);
+		}
+	}
+	
+	finished_vertices.push(label);
 }
 
 template <class T>
@@ -1791,8 +1839,51 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 	vector<vector<T> > res;
 	map<T, bool> visited;
 	
-	if(isDirected())
+	if(isDirected())	// Kosaraju's algorithm for finding Strongly Connected Components (SCCs) in a directed graph
 	{
+		stack<T> finished_vertices;
+		map<T, bool> visited;
+		
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			visited[itr->first] = false;
+		}
+		
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			if(!visited[itr->first])
+			{
+				findFinishOrder(itr->first, finished_vertices, visited);
+			}
+		}
+		
+		Graph<T> rev_graph = reverse();
+		
+		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		{
+			visited[itr->first] = false;
+		}
+		
+		while(!finished_vertices.empty())
+		{
+			T curr = finished_vertices.top();
+			finished_vertices.pop();
+			
+			if(!visited[curr])
+			{
+				vector<T> vlist = rev_graph.dfs(curr);
+				
+				const int sz = vlist.size();
+				for(int i = 0; i < sz; i++)
+				{
+					rev_graph.removeVertex(vlist[i]); // Done to avoid revisiting
+					visited[vlist[i]] = true;
+				}
+
+				res.push_back(vlist);
+			}
+		}
+		
 		return res;
 	}
 	
@@ -1836,18 +1927,18 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 }
 
 template <class T>
-vector<Graph<T> > Graph<T>::getConnectedComponents()
+vector<Graph<T> *> Graph<T>::getConnectedComponents()
 {
-	vector<Graph<T> > res;
+	vector<Graph<T> *> res;
 	vector<vector<T> > vertices_compwise = getVerticesComponentwise();
 	
 	for(typename vector<vector<T> >::iterator i = vertices_compwise.begin(); i != vertices_compwise.end(); i++)
 	{
-		Graph<T> g(directed);
+		Graph<T> *g = new Graph<T>(directed);
 		
 		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
 		{
-			g.addVertex(*j);
+			g->addVertex(*j);
 		}
 		
 		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
@@ -1856,7 +1947,13 @@ vector<Graph<T> > Graph<T>::getConnectedComponents()
 			
 			for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
 			{
-				g.findVertex(*j)->addEdge(g.findVertex(a->first->getLabel()), a->second);
+				Vertex *src = g->findVertex(*j);
+				Vertex *dest = g->findVertex(a->first->getLabel());
+				
+				if(src != NULL && dest != NULL)
+				{
+					src->addEdge(dest, a->second);
+				}
 			}
 		}
 		

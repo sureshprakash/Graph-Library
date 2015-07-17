@@ -6,6 +6,7 @@ using namespace std;
 
 int main()
 {
+	// Undirected test
 	Graph<int> g(false);
 	
 	g.addVertex(1);
@@ -48,12 +49,74 @@ int main()
 	
 	cout << endl;
 	
-	vector<Graph<int> > comp = g.getConnectedComponents();
+	vector<Graph<int> * > comp = g.getConnectedComponents();
 	
 	for(int i = 0; i < comp.size(); i++)
 	{
-		cout << comp[i] << endl;
+		cout << (*comp[i]) << endl;
+	}
+
+	// Directed test
+	Graph<int> g1(true);
+	
+	g1.addVertex(1);
+	g1.addVertex(2);
+	g1.addVertex(3);
+	g1.addVertex(4);
+	g1.addVertex(5);
+	g1.addVertex(6);
+	g1.addVertex(7);
+	g1.addVertex(8);
+	g1.addVertex(9);
+	g1.addVertex(10);
+	g1.addVertex(11);
+	
+	g1.addEdge(1, 2, 3);
+	g1.addEdge(2, 3, 5);
+	g1.addEdge(3, 1, 4);
+	
+	g1.addEdge(2, 4, 9);
+	
+	g1.addEdge(7, 6, 13);
+	g1.addEdge(7, 8, 15);
+	g1.addEdge(5, 7, 16);
+	g1.addEdge(6, 5, 19);
+	g1.addEdge(8, 5, 3);
+	g1.addEdge(3, 5);
+	g1.addEdge(3, 6);
+	
+	g1.addEdge(5, 9, 13);
+	g1.addEdge(4, 9, 15);
+	g1.addEdge(8, 11, 16);
+	g1.addEdge(4, 10, 19);
+	g1.addEdge(9, 10, 3);
+	g1.addEdge(10, 11);
+	g1.addEdge(11, 9);
+
+	vert = g1.getVertices();
+	
+	for(int i = 0; i < vert.size(); i++)
+	{
+		cout << vert[i] << ", ";
 	}
 	
+	cout << endl;
+	
+	edges = g1.getEdges();
+	
+	for(int i = 0; i < edges.size(); i++)
+	{
+		cout << edges[i].first << " " << edges[i].second.first << " " << edges[i].second.second << endl;
+	}
+	
+	cout << endl;
+	
+	comp = g1.getConnectedComponents();
+	
+	for(int i = 0; i < comp.size(); i++)
+	{
+		cout << (*comp[i]) << endl;
+	}
+
 	return 0;
 }
