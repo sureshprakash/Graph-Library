@@ -3,7 +3,7 @@ all:
 	./graph
 	
 clean:
-	rm -rf graph directed weighted topsort bfs_dfs properties shortest_path components path
+	rm -rf graph directed weighted topsort bfs_dfs properties shortest_path components path mincut
 	find . -name '*~' -delete
 	
 test_directed:
@@ -37,6 +37,10 @@ test_components:
 test_path:
 	g++ path_test.cpp -o path -g
 	./path
+	
+test_mincut:
+	g++ mincut_test.cpp -o mincut -g
+	./mincut
 	
 git: clean
 	git add *

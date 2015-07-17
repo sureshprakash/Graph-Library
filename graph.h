@@ -95,8 +95,7 @@ class Graph
 				
 				bool hasNegativeWeightedEdge();
 	
-				void changeAdjacent(Vertex *dest);
-				void removeFromReverse(Vertex *dest);
+				void addIncomingEdges(Vertex *dest);
 		};
 
 		map<T, Vertex *> vertices;
@@ -238,12 +237,30 @@ Graph<T>::Vertex::Vertex(T label) : label(label)
 template <class T>
 Graph<T>::Vertex::~Vertex()
 {
+	vector<typename multiset<pair<Graph<T>::Vertex *, int> >::iterator> avec;
+	
+	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator v = adj.begin(); v != adj.end(); v++)
+	{
+		avec.push_back(v);
+	}
+	
+	for(int i = avec.size() - 1; i >= 0; i--)
+	{
+		this->removeEdge(avec[i]->first, avec[i]->second);
+	}
+	
 	adj.clear();
 	
-	// Remove all the edges corresponding to this vertex
-	for(typename multiset<Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
+	vector<typename multiset<Graph<T>::Vertex *>::iterator> vec;
+	
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = rev.begin(); v != rev.end(); v++)
 	{
-		(*v)->removeEdge(this);
+		vec.push_back(v);
+	}
+	
+	for(int i = vec.size() - 1; i >= 0; i--)
+	{
+		(*vec[i])->removeEdge(this);
 	}
 	
 	rev.clear();
@@ -436,38 +453,13 @@ bool Graph<T>::Vertex::hasNegativeWeightedEdge()
 }
 
 template <class T>
-void Graph<T>::Vertex::changeAdjacent(Graph<T>::Vertex *dest)
+void Graph<T>::Vertex::addIncomingEdges(Graph<T>::Vertex *dest)
 {
-	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
+	for(typename multiset<Graph<T>::Vertex *>::iterator v = rev.begin(); v != rev.end(); v++)
 	{
 		typename multiset<pair<Graph<T>::Vertex *, int> >::iterator fd = (*v)->findVertex(this);
-		if(fd != (*v)->adj.end())
-		{
-			(*v)->addEdge(dest, fd->second);
-			(*v)->removeEdge(fd->first, fd->second);
-		}
+		(*v)->addEdge(dest, fd->second);
 	}
-}
-
-template <class T>
-void Graph<T>::Vertex::removeFromReverse(Graph<T>::Vertex *dest)
-{
-	vector<typename multiset<Graph<T>::Vertex *>::iterator> vec;
-	
-	for(typename multiset<Graph<T>::Vertex *>::iterator v = this->rev.begin(); v != this->rev.end(); v++)
-	{
-		if(*v == dest)
-		{
-			vec.push_back(v);
-		}
-	}
-	
-	const int sz = vec.size();
-	
-	for(int i = 0; i < sz; i++)
-	{
-		rev.erase(vec[i]);
-	} 
 }
 
 template <class T>
@@ -1953,19 +1945,23 @@ bool Graph<T>::mergeVertices(T first, T second, T new_label)
 		return false;
 	}
 	
+	// Rename the vertex
 	ft->setLabel(new_label);
 	vertices.erase(first);
 	vertices[new_label] = ft;
 	
+	// Add outgoing edges from second vertex
 	ft->addEdgesInBatch(sd->getAdjacentNodes());
 
-	sd->changeAdjacent(ft);
-	
-	delete sd;
-	vertices.erase(second);
+	// Add incoming edges from second vertex
+	sd->addIncomingEdges(ft);
 
-	ft->removeFromReverse(sd);
+	// Erase entry from the list of vertices
+	vertices.erase(second);
 	
+	// Delete the vertex
+	delete sd;
+
 	return true;
 }
 
