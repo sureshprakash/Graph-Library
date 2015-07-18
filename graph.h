@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <list>
 #include <map>
@@ -17,6 +18,8 @@
 
 using namespace std;
 
+#define NOT_A_DIRECTED_GRAPH "Not a directed graph"
+#define NOT_AN_ACYCLIC_GRAPH "Not an acyclic graph"
 // #define DEBUG
 
 template <class T>
@@ -41,6 +44,12 @@ class Edge
 			dest = e.src;
 			cost = e.cost;
 		}
+		 
+		friend ostream& operator<<(ostream &out, Edge<T> &e)
+		{
+			out << e.src << " --------------> " << e.dest << " (" << e.cost << ")" << endl;
+			return out;
+		}
 };
 
 /*
@@ -61,132 +70,146 @@ class Graph
 			private:
 				T label;
 				multiset<pair<Vertex *, int> > adj;
-				multiset<Vertex *> rev; // This is maintained to remove edges, when a vertex, with which the edge is incident on, is removed. It also helps to find the indegree 
+				multiset<Vertex *> rev; // This is maintained to remove edges that incident on a removed vertex. It also helps to find the indegree of a vertex
 				
-				typename multiset<pair<Vertex *, int> >::iterator findVertex(Vertex *dest);
+				typename multiset<pair<Vertex *, int> >::iterator findAdjacent(Vertex *dest) const;
 	
 			public:
 				Vertex(T label);
 				~Vertex();
 	
 				void setLabel(T label);
-				T getLabel();
+				T getLabel() const;
 	
-				bool checkLabel(T label);
-				multiset<pair<Vertex *, int> > getAdjacentNodes();
-				multiset<Vertex *> getReverseNodes();
+				multiset<pair<Vertex *, int> > getAdjacentNodes() const;
+				multiset<Vertex *> getReverseNodes() const;
 	
 				void addEdge(Vertex *dest, int cost);
 				bool removeEdge(Vertex *dest, int cost);
 				bool removeEdge(Vertex *dest);
 				void addEdgesInBatch(multiset<pair<Vertex *, int> > new_adj);
 				
-				bool edgeExists(Vertex *dest);
-				bool edgeExists(Vertex *dest, int cost);
+				bool edgeExists(Vertex *dest) const;
+				bool edgeExists(Vertex *dest, int cost) const;
 				
-				unsigned int countEdge(Vertex *dest);
-				unsigned int countEdge(Vertex *dest, int cost);
+				unsigned int countEdge(Vertex *dest) const;
+				unsigned int countEdge(Vertex *dest, int cost) const;
 				
-				int edgeCost(Vertex *dest);
-				vector<int> edgeCosts(Vertex *dest);
+				int edgeCost(Vertex *dest) const;
+				vector<int> edgeCosts(Vertex *dest) const;
 				
-				int indegree();
-				int outdegree();
+				int indegree() const;
+				int outdegree() const;
 				
-				bool hasNegativeWeightedEdge();
+				bool hasNegativeWeightedEdge() const;
 	
 				void addIncomingEdges(Vertex *dest);
+				
+				friend ostream& operator<<(ostream& out, Vertex &v)
+				{
+					out << v.label << " --->  ";
+				
+					for(typename multiset<pair<Vertex *, int> >::iterator itr = v.adj.begin(); itr != v.adj.end(); itr++)
+					{
+						out << itr->first->getLabel() << "(" << itr->second << "), ";
+					}
+				
+					out << "\b\b " << endl;
+					
+					return out;
+				}
 		};
 
 		map<T, Vertex *> vertices;
-		bool directed;
+		bool is_directed;
 		
-		Vertex * findVertex(T label);
+		Vertex * findVertex(T label) const;
 		
-		vector<Vertex *> findVerticesWithIndegreeZero();
-		void findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited);
+		vector<Vertex *> findVerticesWithIndegreeZero() const;
+		void findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited) const;
+		
+		bool addOneWayEdge(T head, T tail, int cost = 1);
 	
 	public:
-		Graph(bool directed);
+		Graph(bool is_directed);
 		Graph(const Graph<T> &g);
 		~Graph();
 
-		Graph<T> reverse();
+		Graph<T> reverse() const;
 		
 		bool addVertex(T label);
 		bool removeVertex(T label);
+		bool renameVertex(T old_label, T new_label);
 		
 		bool addEdge(T head, T tail, int cost = 1);
 		bool removeEdge(T head, T tail, int cost = 1);
 		
-		int countEdge(T head, T tail);
-		int countEdge(T head, T tail, int cost);
+		int countEdge(T head, T tail) const;
+		int countEdge(T head, T tail, int cost) const;
 		
-		bool edgeExists(T head, T tail);
-		bool edgeExists(T head, T tail, int cost);
+		bool edgeExists(T head, T tail) const;
+		bool edgeExists(T head, T tail, int cost) const;
 		
-		bool pathExists(T start, T end);
+		bool pathExists(T start, T end) const;
 		
-		vector<int> edgeCosts(T head, T tail);
+		vector<int> edgeCosts(T head, T tail) const;
 		
 		void operator=(const Graph<T> &g);
 		
-		int indegree(T label);
-		int outdegree(T label);
+		int indegree(T label) const;
+		int outdegree(T label) const;
 		
-		unsigned int numVertices();
-		unsigned int numEdges();
+		unsigned int numVertices() const;
+		unsigned int numEdges() const;
 		
 		void removeSelfLoops();
 		
 		bool mergeVertices(T first, T second, T new_label);
 		
-		T pickRandomVertex();
-		Edge<T> * pickRandomEdge();
+		T pickRandomVertex() const;
+		Edge<T> * pickRandomEdge() const;
 		
-		int minCut();
+		int minCut() const;
 		
-		vector<T> topologicalSort();
+		vector<T> topologicalSort() const;
 		
-		vector<T> dfs();
-		vector<T> dfs(T start);
+		vector<T> dfs() const;
+		vector<T> dfs(T start) const;
 		
-		vector<T> bfs();
-		vector<T> bfs(T start);
+		vector<T> bfs() const;
+		vector<T> bfs(T start) const;
 		
-		map<T, unsigned int> hop_distance(T from);
+		map<T, unsigned int> hop_distance(T from) const;
 
-		pair<vector<T>, vector<vector<int> > > adjacencyList();
-		pair<vector<T>, vector<vector<bool> > > connectivityList();
+		pair<vector<T>, vector<vector<int> > > adjacencyMatrix() const;
+		pair<vector<T>, vector<vector<bool> > > connectivityList() const;
 		
-		bool isDirected();
-		bool isWeighted();
-		bool isConnected();
-		bool isAcyclic();
-		bool isSimple();
+		bool isDirected() const;
+		bool isWeighted() const;
+		bool isConnected() const;
+		bool isAcyclic() const;
+		bool isSimple() const;
 		
-		bool hasNegativeWeightedEdge();
+		bool hasNegativeWeightedEdge() const;
 		
-		map<T, pair<T, int> > bfsShortestPath(T source);
-		map<T, pair<T, int> > topologicalShortestPath(T source);
-		map<T, pair<T, int> > dijkstraShortestPath(T source);
-		map<T, pair<T, int> > bellmanFordShortestPath(T source);
+		map<T, pair<T, int> > bfsShortestPath(T source) const;
+		map<T, pair<T, int> > topologicalShortestPath(T source) const;
+		map<T, pair<T, int> > dijkstraShortestPath(T source) const;
+		map<T, pair<T, int> > bellmanFordShortestPath(T source) const;
 		
-		map<T, pair<T, int> > shortestPath(T source);
-		pair<vector<T>, vector<vector<pair<T, int> > > > shortestPath();
+		map<T, pair<T, int> > shortestPath(T source) const;
+		pair<vector<T>, vector<vector<pair<T, int> > > > shortestPath() const;
 		
-		Graph<T> minimumSpanningTree();
+		Graph<T> minimumSpanningTree() const;
 		
-		void printPath(ostream &out, map<T, pair<T, int> > path);
-		void printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int> > > > dist);
+		void printPath(ostream &out, map<T, pair<T, int> > path) const;
+		void printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int> > > > dist) const;
 		
-		map<T, int> assignVertexNumbers();
+		vector<T> getVertices() const;
+		vector<Edge<T> *> getEdges() const;
 		
-		vector<T> getVertices();
-		vector<pair<T, pair<T, int> > > getEdges();
-		
-		vector<vector<T> > getVerticesComponentwise();
-		vector<Graph<T> *> getConnectedComponents();
+		vector<vector<T> > getVerticesComponentwise() const;
+		vector<Graph<T> *> getConnectedComponents() const;
 		
 		friend ostream &operator<<(ostream &out, Graph &g)
 		{	
@@ -199,16 +222,7 @@ class Graph
 
 			for(typename map<T, Vertex *>::iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 			{	
-				out << v->second->getLabel() << " --->  ";
-				
-				multiset<pair<Vertex *, int> > nbh = v->second->getAdjacentNodes();
-				
-				for(typename multiset<pair<Vertex *, int> >::iterator adj = nbh.begin(); adj != nbh.end(); adj++)
-				{
-					out << (*adj).first->getLabel() << "(" << (*adj).second << "), ";
-				}
-				
-				out << "\b\b " << endl;
+				out << (*(v->second));
 			}
 			
 			#ifdef DEBUG
@@ -247,12 +261,13 @@ Graph<T>::Vertex::~Vertex()
 		avec.push_back(v);
 	}
 	
+	// Remove outgoing edges
 	for(int i = avec.size() - 1; i >= 0; i--)
 	{
 		this->removeEdge(avec[i]->first, avec[i]->second);
 	}
 	
-	adj.clear();
+	assert(adj.empty());
 	
 	vector<typename multiset<Graph<T>::Vertex *>::iterator> vec;
 	
@@ -261,12 +276,13 @@ Graph<T>::Vertex::~Vertex()
 		vec.push_back(v);
 	}
 	
+	// Remove incoming edges
 	for(int i = vec.size() - 1; i >= 0; i--)
 	{
 		(*vec[i])->removeEdge(this);
 	}
 	
-	rev.clear();
+	assert(rev.empty());
 }
 
 template <class T>
@@ -276,25 +292,25 @@ void Graph<T>::Vertex::setLabel(T label)
 }
 
 template <class T>
-T Graph<T>::Vertex::getLabel()
+T Graph<T>::Vertex::getLabel() const
 {
 	return label;
 }
 
 template <class T>
-multiset<pair<typename Graph<T>::Vertex *, int> > Graph<T>::Vertex::getAdjacentNodes()
+multiset<pair<typename Graph<T>::Vertex *, int> > Graph<T>::Vertex::getAdjacentNodes() const
 {
 	return adj;
 }
 
 template <class T>
-multiset<typename Graph<T>::Vertex *> Graph<T>::Vertex::getReverseNodes()
+multiset<typename Graph<T>::Vertex *> Graph<T>::Vertex::getReverseNodes() const
 {
 	return rev;
 }
 
 template <class T>
-typename multiset<pair<typename Graph<T>::Vertex *, int> >::iterator Graph<T>::Vertex::findVertex(Graph<T>::Vertex *dest)
+typename multiset<pair<typename Graph<T>::Vertex *, int> >::iterator Graph<T>::Vertex::findAdjacent(Graph<T>::Vertex *dest) const
 {
 	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
 	{
@@ -308,24 +324,19 @@ typename multiset<pair<typename Graph<T>::Vertex *, int> >::iterator Graph<T>::V
 }
 
 template <class T>
-bool Graph<T>::Vertex::checkLabel(T label)
-{
-	return (label == this->label);
-}
-
-template <class T>
 void Graph<T>::Vertex::addEdge(Graph<T>::Vertex *dest, int cost)
 {
-	if(dest != NULL)
-	{
-		this->adj.insert(make_pair(dest, cost));
-		dest->rev.insert(this);
-	}
+	assert(dest != NULL);
+
+	adj.insert(make_pair(dest, cost));
+	dest->rev.insert(this);
 }
 
 template <class T>
 bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest, int cost)
 {
+	assert(dest != NULL);
+	
 	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = adj.find(make_pair(dest, cost));
 	
 	if(pos == adj.end())
@@ -342,7 +353,9 @@ bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest, int cost)
 template <class T>
 bool Graph<T>::Vertex::removeEdge(Graph<T>::Vertex *dest)
 {
-	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = findVertex(dest);
+	assert(dest != NULL);
+	
+	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = findAdjacent(dest);
 	
 	if(pos == adj.end())
 	{
@@ -366,26 +379,31 @@ void Graph<T>::Vertex::addEdgesInBatch(multiset<pair<Graph<T>::Vertex *, int> > 
 }
 
 template <class T>
-bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest, int cost)
+bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest, int cost) const
 {
+	assert(dest != NULL);
 	return adj.find(make_pair(dest, cost)) != adj.end();
 }
 
 template <class T>
-unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest, int cost)
+bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest) const
 {
+	assert(dest != NULL);
+	return findAdjacent(dest) != adj.end();
+}
+
+template <class T>
+unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest, int cost) const
+{
+	assert(dest != NULL);
 	return adj.count(make_pair(dest, cost));
 }
 
 template <class T>
-bool Graph<T>::Vertex::edgeExists(Graph<T>::Vertex *dest)
+unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest) const
 {
-	return findVertex(dest) != adj.end();
-}
-
-template <class T>
-unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest)
-{
+	assert(dest != NULL);
+	
 	unsigned int count = 0;
 	
 	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
@@ -400,22 +418,20 @@ unsigned int Graph<T>::Vertex::countEdge(Graph<T>::Vertex *dest)
 }
 
 template <class T>
-int Graph<T>::Vertex::edgeCost(Graph<T>::Vertex *dest)
+int Graph<T>::Vertex::edgeCost(Graph<T>::Vertex *dest) const
 {
-	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
-	{
-		if(itr->first == dest)
-		{
-			return itr->second;
-		}
-	}
+	assert(dest != NULL);
 	
-	return (int) INFINITY;
+	typename multiset<pair<Graph<T>::Vertex *, int> >::iterator pos = findAdjacent(dest);
+	
+	return (pos == adj.end()? (int) INFINITY: pos->second);
 }
 
 template <class T>
-vector<int> Graph<T>::Vertex::edgeCosts(Graph<T>::Vertex *dest)
+vector<int> Graph<T>::Vertex::edgeCosts(Graph<T>::Vertex *dest) const
 {
+	assert(dest != NULL);
+	
 	vector<int> res;
 	
 	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
@@ -430,19 +446,19 @@ vector<int> Graph<T>::Vertex::edgeCosts(Graph<T>::Vertex *dest)
 }
 
 template <class T>
-int Graph<T>::Vertex::indegree()
+int Graph<T>::Vertex::indegree() const
 {
 	return rev.size();
 }
 
 template <class T>
-int Graph<T>::Vertex::outdegree()
+int Graph<T>::Vertex::outdegree() const
 {
 	return adj.size();
 }
 
 template <class T>
-bool Graph<T>::Vertex::hasNegativeWeightedEdge()
+bool Graph<T>::Vertex::hasNegativeWeightedEdge() const
 {
 	for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator itr = adj.begin(); itr != adj.end(); itr++)
 	{
@@ -458,22 +474,24 @@ bool Graph<T>::Vertex::hasNegativeWeightedEdge()
 template <class T>
 void Graph<T>::Vertex::addIncomingEdges(Graph<T>::Vertex *dest)
 {
+	assert(dest != NULL);
+	
 	for(typename multiset<Graph<T>::Vertex *>::iterator v = rev.begin(); v != rev.end(); v++)
 	{
-		typename multiset<pair<Graph<T>::Vertex *, int> >::iterator fd = (*v)->findVertex(this);
+		typename multiset<pair<Graph<T>::Vertex *, int> >::iterator fd = (*v)->findAdjacent(this);
 		(*v)->addEdge(dest, fd->second);
 	}
 }
 
 template <class T>
-Graph<T>::Graph(bool directed) : directed(directed)
+Graph<T>::Graph(bool is_directed) : is_directed(is_directed)
 {
 }
 
 template <class T>
 Graph<T>::Graph(const Graph<T> &g)
 {
-	this->operator=(g);
+	operator=(g);
 }
 
 template <class T>
@@ -490,16 +508,14 @@ Graph<T>::~Graph()
 template <class T>
 void Graph<T>::operator=(const Graph<T> &g)
 {
-	directed = g.directed;
+	is_directed = g.is_directed;
 
-	map<T, Vertex *> tmp_vertices = g.vertices;
-	
-	for(typename map<T, Vertex *>::iterator v = tmp_vertices.begin(); v != tmp_vertices.end(); v++)
+	for(typename map<T, Vertex *>::const_iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 	{
 		addVertex(v->first);
 	}
 	
-	for(typename map<T, Vertex *>::iterator v = tmp_vertices.begin(); v != tmp_vertices.end(); v++)
+	for(typename map<T, Vertex *>::const_iterator v = g.vertices.begin(); v != g.vertices.end(); v++)
 	{
 		multiset<pair<Graph<T>::Vertex *, int> > adj = v->second->getAdjacentNodes();
 		
@@ -512,20 +528,20 @@ void Graph<T>::operator=(const Graph<T> &g)
 }
 
 template <class T>
-Graph<T> Graph<T>::reverse()
+Graph<T> Graph<T>::reverse() const
 {
-	Graph<T> g(directed);
+	Graph<T> g(is_directed);
 
-	for(typename map<T, Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	for(typename map<T, Vertex *>::const_iterator v = vertices.begin(); v != vertices.end(); v++)
 	{
 		g.addVertex(v->first);
 	}
 	
-	for(typename map<T, Vertex *>::iterator v = vertices.begin(); v != vertices.end(); v++)
+	for(typename map<T, Vertex *>::const_iterator v = vertices.begin(); v != vertices.end(); v++)
 	{
 		multiset<pair<Graph<T>::Vertex *, int> > adj = v->second->getAdjacentNodes(); // Unfortunately rev cannot be used because it does not contain weight information
 		
-		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 		{
 			// Graph<T>::addEdge() is intentionally not called, because it might cause problems in case of undirected graph
 			g.findVertex(a->first->getLabel())->addEdge(g.findVertex(v->first), a->second);
@@ -536,18 +552,14 @@ Graph<T> Graph<T>::reverse()
 }
 
 template <class T>
-typename Graph<T>::Vertex * Graph<T>::findVertex(T label)
+typename Graph<T>::Vertex * Graph<T>::findVertex(T label) const
 {
-	if(vertices.find(label) == vertices.end())
-	{
-		return NULL;
-	}
-	
-	return vertices[label];
+	typename map<T, Vertex *>::const_iterator vtx = vertices.find(label);
+	return ((vtx == vertices.end())? NULL: vtx->second);
 }
 
 template <class T>
-void Graph<T>::findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited)
+void Graph<T>::findFinishOrder(T label, stack<T> & finished_vertices, map<T, bool> & visited) const
 {
 	Vertex *vertex = findVertex(label);
 	assert(vertex != NULL);
@@ -568,52 +580,61 @@ void Graph<T>::findFinishOrder(T label, stack<T> & finished_vertices, map<T, boo
 }
 
 template <class T>
-int Graph<T>::indegree(T label)
-{
-	if(findVertex(label) == NULL)
+bool Graph<T>::addOneWayEdge(T head, T tail, int cost)
+{	
+	Vertex * hd = findVertex(head);
+	Vertex * tl = findVertex(tail);
+	
+	// One of the lables does not exist
+	if((hd == NULL) || (tl == NULL))
 	{
-		return -1;
+		return false;
 	}
 	
-	return vertices[label]->indegree();
+	hd->addEdge(tl, cost);
+	
+	return true;
 }
 
 template <class T>
-int Graph<T>::outdegree(T label)
+int Graph<T>::indegree(T label) const
 {
-	if(findVertex(label) == NULL)
-	{
-		return -1;
-	}
-	
-	return vertices[label]->outdegree();
+	Vertex *vtx = findVertex(label);
+	return ((vtx == NULL)? -1: vtx->indegree());
 }
 
 template <class T>
-unsigned int Graph<T>::numVertices()
+int Graph<T>::outdegree(T label) const
+{
+	Vertex *vtx = findVertex(label);
+	return ((vtx == NULL)? -1: vtx->outdegree());
+}
+
+template <class T>
+unsigned int Graph<T>::numVertices() const
 {
 	return vertices.size();
 }
 
 template <class T>
-unsigned int Graph<T>::numEdges()
+unsigned int Graph<T>::numEdges() const
 {
 	unsigned int cnt = 0;
 	
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		cnt += itr->second->outdegree();
 	}
 	
-	return directed? cnt: (cnt >> 1);
+	return is_directed? cnt: (cnt >> 1);
 }
 
 template <class T>
-vector<typename Graph<T>::Vertex *> Graph<T>::findVerticesWithIndegreeZero()
+vector<typename Graph<T>::Vertex *> Graph<T>::findVerticesWithIndegreeZero() const
 {
 	vector<typename Graph<T>::Vertex *> res;
 	
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		if(itr->second->indegree() == 0)
 		{
@@ -634,14 +655,11 @@ bool Graph<T>::addVertex(T label)
 	}
 	
 	Vertex *new_node = new Vertex(label);
-	
 	// Memory full
-	if(new_node == NULL)
-	{
-		return false;
-	}
+	assert(new_node != NULL);
 	
 	vertices[label] = new_node;
+
 	return true;
 }
 
@@ -663,6 +681,28 @@ bool Graph<T>::removeVertex(T label)
 }
 
 template <class T>
+bool Graph<T>::renameVertex(T old_label, T new_label)
+{
+	if(old_label == new_label)
+	{
+		return true;
+	}
+	
+	Vertex *ft = findVertex(old_label);
+	
+	if(ft == NULL || findVertex(new_label) != NULL)	// Old label does not exist or new label exists
+	{
+		return false;
+	}
+	
+	ft->setLabel(new_label);
+	vertices.erase(old_label);
+	vertices[new_label] = ft;
+	
+	return true;
+}
+
+template <class T>
 bool Graph<T>::addEdge(T head, T tail, int cost)
 {	
 	Vertex * hd = findVertex(head);
@@ -676,7 +716,7 @@ bool Graph<T>::addEdge(T head, T tail, int cost)
 	
 	hd->addEdge(tl, cost);
 	
-	if(!directed)
+	if(!is_directed)
 	{
 		if(hd != tl)		// To avoid adding self loops twice
 		{
@@ -703,7 +743,7 @@ bool Graph<T>::removeEdge(T head, T tail, int cost)
 	
 	forward = hd->removeEdge(tl, cost);
 	
-	if(!directed)
+	if(!is_directed)
 	{
 		if(hd != tl)		// To avoid removing self loops twice
 		{
@@ -715,7 +755,7 @@ bool Graph<T>::removeEdge(T head, T tail, int cost)
 }
 
 template <class T>
-bool Graph<T>::edgeExists(T head, T tail, int cost)
+bool Graph<T>::edgeExists(T head, T tail, int cost) const
 {
 	Vertex * hd = findVertex(head);
 	Vertex * tl = findVertex(tail);
@@ -730,7 +770,7 @@ bool Graph<T>::edgeExists(T head, T tail, int cost)
 }
 
 template <class T>
-bool Graph<T>::edgeExists(T head, T tail)
+bool Graph<T>::edgeExists(T head, T tail) const
 {
 	Vertex * hd = findVertex(head);
 	Vertex * tl = findVertex(tail);
@@ -745,7 +785,7 @@ bool Graph<T>::edgeExists(T head, T tail)
 }
 
 template <class T>
-vector<int> Graph<T>::edgeCosts(T head, T tail)
+vector<int> Graph<T>::edgeCosts(T head, T tail) const
 {
 	vector<int> empty;
 	
@@ -762,7 +802,7 @@ vector<int> Graph<T>::edgeCosts(T head, T tail)
 }
 
 template <class T>
-int Graph<T>::countEdge(T head, T tail, int cost)
+int Graph<T>::countEdge(T head, T tail, int cost) const
 {
 	Vertex * hd = findVertex(head);
 	Vertex * tl = findVertex(tail);
@@ -777,7 +817,7 @@ int Graph<T>::countEdge(T head, T tail, int cost)
 }
 
 template <class T>
-int Graph<T>::countEdge(T head, T tail)
+int Graph<T>::countEdge(T head, T tail) const
 {
 	Vertex * hd = findVertex(head);
 	Vertex * tl = findVertex(tail);
@@ -792,7 +832,7 @@ int Graph<T>::countEdge(T head, T tail)
 }
 
 template <class T>
-bool Graph<T>::pathExists(T start, T end)
+bool Graph<T>::pathExists(T start, T end) const
 {
 	Vertex *st = findVertex(start);
 	Vertex *ed = findVertex(end);
@@ -802,40 +842,9 @@ bool Graph<T>::pathExists(T start, T end)
 		return false;
 	}
 	
-	// Create and initialize table
-	map<T, bool> visited;
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
-	{
-		visited[itr->first] = false;
-	}
+	vector<T> intermediate = dfs(start);
 	
-	stack<Vertex *> stk;
-	
-	stk.push(st);
-	
-	while(!stk.empty())
-	{
-		Vertex *vtx = stk.top();
-		stk.pop();
-		
-		if(vtx->getLabel() == end)
-		{
-			return true;
-		}
-		
-		if(!visited[vtx->getLabel()])
-		{
-			visited[vtx->getLabel()] = true;
-	
-			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
-			{
-				stk.push(a->first);
-			}
-		}
-	}
-	
-	return false;
+	return find(intermediate.begin(), intermediate.end(), end) != intermediate.end();
 }
 
 template <class T>
@@ -851,19 +860,18 @@ void Graph<T>::removeSelfLoops()
 }
 
 template <class T>
-vector<T> Graph<T>::topologicalSort()
+vector<T> Graph<T>::topologicalSort() const
 {
-	if(!directed)
+	if(!is_directed)
 	{
-		throw "Not a directed graph";
+		throw strdup(NOT_A_DIRECTED_GRAPH);
 	}
 	
 	vector<Vertex *> l = findVerticesWithIndegreeZero();
-	unsigned int k = 0;
 	
 	if(l.size() == 0)
 	{
-		throw "Not an acyclic graph";
+		throw strdup(NOT_AN_ACYCLIC_GRAPH);
 	}	
 	
 	queue<Vertex *> q;
@@ -872,23 +880,21 @@ vector<T> Graph<T>::topologicalSort()
 	
 	// Create and initialize table
 	map<T, unsigned int> indegree_table;
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		indegree_table[itr->first] = itr->second->indegree();
 	}
 	
-	q.push(l[k++]);
+	for(int i = l.size() - 1; i >= 0; i--)
+	{
+		q.push(l[i]);
+	}
 	
 	while(res.size() < sz)
 	{
 		if(q.empty())
 		{
-			if(k >= l.size())
-			{
-				throw "Not an acyclic graph";
-			}
-			
-			q.push(l[k++]);
+			throw strdup(NOT_AN_ACYCLIC_GRAPH);
 		}
 		
 		Vertex *ft = q.front();
@@ -897,7 +903,7 @@ vector<T> Graph<T>::topologicalSort()
 		res.push_back(ft->getLabel());
 		
 		multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
-		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 		{
 			indegree_table[a->first->getLabel()]--;
 			
@@ -912,7 +918,7 @@ vector<T> Graph<T>::topologicalSort()
 }
 
 template <class T>
-vector<T> Graph<T>::dfs()
+vector<T> Graph<T>::dfs() const
 {
 	vector<T> v;
 	
@@ -925,7 +931,7 @@ vector<T> Graph<T>::dfs()
 }
 
 template <class T>
-vector<T> Graph<T>::dfs(T start)
+vector<T> Graph<T>::dfs(T start) const
 {
 	vector<T> res;
 	Vertex *vtx = findVertex(start);
@@ -937,7 +943,7 @@ vector<T> Graph<T>::dfs(T start)
 	
 	// Create and initialize table
 	map<T, bool> visited;
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		visited[itr->first] = false;
 	}
@@ -957,7 +963,7 @@ vector<T> Graph<T>::dfs(T start)
 			visited[vtx->getLabel()] = true;
 	
 			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 			{
 				stk.push(a->first);
 			}
@@ -968,7 +974,7 @@ vector<T> Graph<T>::dfs(T start)
 }
 		
 template <class T>
-vector<T> Graph<T>::bfs()
+vector<T> Graph<T>::bfs() const
 {
 	vector<T> v;
 	
@@ -981,7 +987,7 @@ vector<T> Graph<T>::bfs()
 }
 
 template <class T>
-vector<T> Graph<T>::bfs(T start)
+vector<T> Graph<T>::bfs(T start) const
 {
 	vector<T> res;
 	Vertex *vtx = findVertex(start);
@@ -993,7 +999,7 @@ vector<T> Graph<T>::bfs(T start)
 	
 	// Create and initialize table
 	map<T, bool> visited;
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		visited[itr->first] = false;
 	}
@@ -1013,7 +1019,7 @@ vector<T> Graph<T>::bfs(T start)
 			visited[vtx->getLabel()] = true;
 	
 			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 			{
 				q.push(a->first);
 			}
@@ -1024,7 +1030,7 @@ vector<T> Graph<T>::bfs(T start)
 }
 
 template <class T>
-map<T, unsigned int> Graph<T>::hop_distance(T from)
+map<T, unsigned int> Graph<T>::hop_distance(T from) const
 {
 	map<T, unsigned int> res;
 	Vertex *vtx = findVertex(from);
@@ -1036,7 +1042,7 @@ map<T, unsigned int> Graph<T>::hop_distance(T from)
 	
 	// Create and initialize table
 	map<T, bool> visited;
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		visited[itr->first] = false;
 	}
@@ -1056,7 +1062,7 @@ map<T, unsigned int> Graph<T>::hop_distance(T from)
 			visited[pr.first->getLabel()] = true;
 	
 			multiset<pair<Graph<T>::Vertex *, int> > adj = pr.first->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 			{
 				q.push(make_pair(a->first, pr.second + 1));
 			}
@@ -1067,38 +1073,23 @@ map<T, unsigned int> Graph<T>::hop_distance(T from)
 }
 
 template <class T>
-map<T, int> Graph<T>::assignVertexNumbers()
-{
-	map<T, int> res;
-	
-	int cnt = 0;
-	
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
-	{
-		res[itr->first] = ++cnt;
-	}
-	
-	return res;
-}
-
-template <class T>
-pair<vector<T>, vector<vector<int> > > Graph<T>::adjacencyList()
+pair<vector<T>, vector<vector<int> > > Graph<T>::adjacencyMatrix() const
 {
 	vector<T> v;
 	vector<vector<int> > res;
 	
 	if(isSimple())
 	{
-		for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
 			v.push_back(itr->first);
 		}
 	
-		for(typename vector<T>::iterator i = v.begin(); i != v.end(); i++)
+		for(typename vector<T>::const_iterator i = v.begin(); i != v.end(); i++)
 		{
 			vector<int> l;
 		
-			for(typename vector<T>::iterator j = v.begin(); j != v.end(); j++)
+			for(typename vector<T>::const_iterator j = v.begin(); j != v.end(); j++)
 			{
 				if(*i == *j)
 				{
@@ -1118,30 +1109,23 @@ pair<vector<T>, vector<vector<int> > > Graph<T>::adjacencyList()
 }
 
 template <class T>
-pair<vector<T>, vector<vector<bool> > > Graph<T>::connectivityList()
+pair<vector<T>, vector<vector<bool> > > Graph<T>::connectivityList() const
 {
 	vector<T> v;
 	vector<vector<bool> > res;
 	
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		v.push_back(itr->first);
 	}
 
-	for(typename vector<T>::iterator i = v.begin(); i != v.end(); i++)
+	for(typename vector<T>::const_iterator i = v.begin(); i != v.end(); i++)
 	{
 		vector<bool> l;
 
-		for(typename vector<T>::iterator j = v.begin(); j != v.end(); j++)
+		for(typename vector<T>::const_iterator j = v.begin(); j != v.end(); j++)
 		{
-			if(*i == *j)
-			{
-				l.push_back(true);
-			}
-			else
-			{
-				l.push_back(findVertex(*i)->edgeExists(findVertex(*j)));
-			}
+			l.push_back((*i == *j) || edgeExists(*i, *j));
 		}
 	
 		res.push_back(l);
@@ -1151,18 +1135,18 @@ pair<vector<T>, vector<vector<bool> > > Graph<T>::connectivityList()
 }
 
 template <class T>
-bool Graph<T>::isDirected()
+bool Graph<T>::isDirected() const
 {
-	return directed;
+	return is_directed;
 }
 
 template <class T>
-bool Graph<T>::isWeighted()
+bool Graph<T>::isWeighted() const
 {
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		multiset<pair<Graph<T>::Vertex *, int> > adj = itr->second->getAdjacentNodes();
-		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 		{
 			if(a->second != 1)
 			{	
@@ -1175,14 +1159,14 @@ bool Graph<T>::isWeighted()
 }
 
 template <class T>
-bool Graph<T>::isConnected()
+bool Graph<T>::isConnected() const
 {
-	if(numVertices() == 0)
+	if(numVertices() <= 1)
 	{
 		return true;
 	}
 	
-	if(directed)
+	if(is_directed)
 	{
 		pair<vector<T>, vector<vector<bool> > > pr = connectivityList();
 		vector<vector<bool> > curr_matrix = pr.second;
@@ -1217,136 +1201,63 @@ bool Graph<T>::isConnected()
 	}
 		
 	// Undirected graph
-	Vertex *vtx = vertices.begin()->second;
-
-	// Create and initialize table
-	map<T, bool> visited;
-	for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
-	{
-		visited[itr->first] = false;
-	}
+	T src = vertices.begin()->first;
+	vector<T> traversed = dfs(src);
 	
-	stack<Vertex *> stk;
-	
-	stk.push(vtx);
-	
-	while(!stk.empty())
-	{
-		vtx = stk.top();
-		stk.pop();
-		
-		if(!visited[vtx->getLabel()])
-		{
-			visited[vtx->getLabel()] = true;
-	
-			multiset<pair<Graph<T>::Vertex *, int> > adj = vtx->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
-			{
-				stk.push(a->first);
-			}
-		}
-	}
-	
-	for(typename map<T, bool>::iterator itr = visited.begin(); itr != visited.end(); itr++)
-	{
-		if(!itr->second)
-		{
-			return false;
-		}
-	}
-	
-	return true;
+	return traversed.size() == vertices.size();
 }
 
 template <class T>
-bool Graph<T>::isAcyclic()
+bool Graph<T>::isAcyclic() const
 {
 	if(numVertices() == 0)
 	{
 		return true;
 	}
 	
-	if(directed)
+	if(is_directed)
 	{
-		vector<Vertex *> l = findVerticesWithIndegreeZero();
-		unsigned int k = 0;
-		unsigned int cnt = 0;
-			
-		// Cycle exists
-		if(l.size() == 0)
+		try
 		{
-			return false;
-		}	
-	
-		queue<Vertex *> q;
-		const unsigned int sz = vertices.size();
-	
-		// Create and initialize table
-		map<T, int> indegree_table;
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
-		{
-			indegree_table[itr->first] = itr->second->indegree();
+			topologicalSort();
 		}
-	
-		q.push(l[k++]);
-	
-		while(cnt < sz)
+		catch(char *e)
 		{
-			if(q.empty())
+			if(strcmp(e, NOT_AN_ACYCLIC_GRAPH) == 0)
 			{
-				if(k >= l.size())
-				{
-					return false;
-				}
-				
-				q.push(l[k++]);
-			}
-		
-			Vertex *ft = q.front();
-			q.pop();
-
-			cnt++;		
-		
-			indegree_table[ft->getLabel()]--; // This is done to denote that the vertex is already processed
-			
-			multiset<pair<Graph<T>::Vertex *, int> > adj = ft->getAdjacentNodes();
-			for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
-			{
-				indegree_table[a->first->getLabel()]--;
-			
-				if(indegree_table[a->first->getLabel()] == 0)
-				{
-					q.push(a->first);
-				}
+				return false;
 			}
 		}
-	
+		
 		return true;
 	}
 	
 	// Undirected graph
-	
 	if(numEdges() > numVertices() - 1)
 	{
 		return false;
 	}
 	
 	Graph<T> g = *this;
-	map<T, int> m = g.assignVertexNumbers();
-	DisjointSet s(g.vertices.size());
+	DisjointSet<T> s;
 	
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = g.vertices.begin(); itr != g.vertices.end(); itr++)
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = g.vertices.begin(); itr != g.vertices.end(); itr++)
+	{
+		s.create(itr->first);
+	}
+	
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = g.vertices.begin(); itr != g.vertices.end(); itr++)
 	{
 		multiset<pair<Graph<T>::Vertex *, int> > adj = itr->second->getAdjacentNodes();
 		
-		for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator it = adj.begin(); it != adj.end(); it++)
+		for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator it = adj.begin(); it != adj.end(); it++)
 		{
-			if(s.connected(m[itr->second->getLabel()] - 1, m[it->first->getLabel()] - 1))
+			if(s.connected(itr->second->getLabel(), it->first->getLabel()))
 			{
 				return false;
 			}
 			
-			s.join(m[itr->second->getLabel()] - 1, m[it->first->getLabel()] - 1);
+			s.join(itr->second->getLabel(), it->first->getLabel());
 			itr->second->removeEdge(it->first);
 			it->first->removeEdge(itr->second);
 		}
@@ -1356,18 +1267,18 @@ bool Graph<T>::isAcyclic()
 }
 
 template <class T>
-bool Graph<T>::isSimple()
+bool Graph<T>::isSimple() const
 {
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
-		if(itr->second->edgeExists(findVertex(itr->first)))
+		if(edgeExists(itr->first, itr->first))	// Self loops
 		{
 			return false;
 		}
 		
-		for(typename map<T, Graph<T>::Vertex *>::iterator it = vertices.begin(); it != vertices.end(); it++)
+		for(typename map<T, Graph<T>::Vertex *>::const_iterator it = vertices.begin(); it != vertices.end(); it++)
 		{
-			if(itr->second->countEdge(findVertex(it->first)) > 1)
+			if(countEdge(itr->first, it->first) > 1)
 			{
 				return false;
 			}
@@ -1378,9 +1289,9 @@ bool Graph<T>::isSimple()
 }
 
 template <class T>
-bool Graph<T>::hasNegativeWeightedEdge()
+bool Graph<T>::hasNegativeWeightedEdge() const
 {
-	for(typename map<T, Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		if(itr->second->hasNegativeWeightedEdge())
 		{
@@ -1392,7 +1303,7 @@ bool Graph<T>::hasNegativeWeightedEdge()
 }
 
 template <class T>
-map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source)
+map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source) const
 {
 	map<T, pair<T, int> > res;
 	
@@ -1404,7 +1315,7 @@ map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source)
 		{
 			// Create and initialize table
 			map<T, bool> visited;
-			for(typename map<T, typename Graph<T>::Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+			for(typename map<T, typename Graph<T>::Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 			{
 				visited[itr->first] = false;
 			}
@@ -1424,18 +1335,18 @@ map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source)
 					visited[pr.first->getLabel()] = true;
 	
 					multiset<pair<Graph<T>::Vertex *, int> > adj = pr.first->getAdjacentNodes();
-					for(typename multiset<pair<Graph<T>::Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+					for(typename multiset<pair<Graph<T>::Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 					{
 						q.push(make_pair(a->first, make_pair(pr.first->getLabel(), pr.second.second + 1)));
 					}
 				}
 			}
 			
-			for(typename map<T, bool>::iterator itr = visited.begin(); itr != visited.end(); itr++)
+			for(typename map<T, bool>::const_iterator itr = visited.begin(); itr != visited.end(); itr++)
 			{
 				if(!itr->second)
 				{
-					res[itr->first] = make_pair(itr->first, INFINITY);
+					res[itr->first] = make_pair(itr->first, (int) INFINITY);
 				}
 			}
 		}	
@@ -1445,7 +1356,7 @@ map<T, pair<T, int> > Graph<T>::bfsShortestPath(T source)
 }
 
 template <class T>
-map<T, pair<T, int> > Graph<T>::topologicalShortestPath(T source)
+map<T, pair<T, int> > Graph<T>::topologicalShortestPath(T source) const
 {
 	map<T, pair<T, int> > res;
 	
@@ -1500,7 +1411,7 @@ map<T, pair<T, int> > Graph<T>::topologicalShortestPath(T source)
 }
 
 template <class T>
-map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
+map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source) const
 {
 	map<T, pair<T, int> > res;
 	
@@ -1510,7 +1421,7 @@ map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
 		{
 			map<T, bool> visited;
 			
-			for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+			for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 			{
 				res[itr->first] = make_pair(itr->first, (int) INFINITY);
 				visited[itr->first] = false;
@@ -1520,10 +1431,11 @@ map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
 
 			while(1)
 			{
-				int min_dist = INFINITY;
+				// TODO: Try to use min heap
+				int min_dist = (int) INFINITY;
 				T curr;
 				
-				for(typename map<T, pair<T, int> >::iterator itr = res.begin(); itr != res.end(); itr++)
+				for(typename map<T, pair<T, int> >::const_iterator itr = res.begin(); itr != res.end(); itr++)
 				{
 					if(!visited[itr->first] && (itr->second.second < min_dist))
 					{
@@ -1539,8 +1451,10 @@ map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
 				
 				visited[curr] = true;
 				
+				assert(findVertex(curr) != NULL);
+				
 				multiset<pair<Vertex *, int> > adj = findVertex(curr)->getAdjacentNodes();
-				for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+				for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 				{
 					if(res[curr].second + a->second < res[a->first->getLabel()].second)
 					{
@@ -1555,12 +1469,12 @@ map<T, pair<T, int> > Graph<T>::dijkstraShortestPath(T source)
 }
 
 template <class T>
-map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source)
+map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source) const
 {
 	map<T, pair<T, int> > emp, res;
 	int iter = numVertices() - 1;
 	
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		res[itr->first] = make_pair(itr->first, (int) INFINITY);
 	}
@@ -1569,10 +1483,12 @@ map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source)
 	
 	while(iter--)
 	{
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
+			assert(itr->second != NULL);
+			
 			multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
-			for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 			{
 				// First condition is checked to avoid overflow
 				if((res[itr->first].second != (int) INFINITY) && (res[itr->first].second + a->second < res[a->first->getLabel()].second))
@@ -1583,10 +1499,12 @@ map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source)
 		}
 	}	
 	
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
+		assert(itr->second != NULL);
+		
 		multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
-		for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 		{
 			// First condition is checked to avoid overflow
 			if((res[itr->first].second != (int) INFINITY) && (res[itr->first].second + a->second < res[a->first->getLabel()].second))
@@ -1601,7 +1519,7 @@ map<T, pair<T, int> > Graph<T>::bellmanFordShortestPath(T source)
 }
 
 template <class T>
-map<T, pair<T, int> > Graph<T>::shortestPath(T source)
+map<T, pair<T, int> > Graph<T>::shortestPath(T source) const
 {
 	map<T, pair<T, int> > res;
 	
@@ -1637,11 +1555,11 @@ map<T, pair<T, int> > Graph<T>::shortestPath(T source)
 }
 
 template <class T>
-pair<vector<T>, vector<vector<pair<T, int> > > > Graph<T>::shortestPath()
+pair<vector<T>, vector<vector<pair<T, int> > > > Graph<T>::shortestPath() const
 {
 	if(isSimple())
 	{
-		pair<vector<T>, vector<vector<int> > > pr = adjacencyList();
+		pair<vector<T>, vector<vector<int> > > pr = adjacencyMatrix();
 		vector<vector<int> > curr_matrix = pr.second;
 		vector<vector<int> > prev_matrix;
 		vector<vector<pair<T, int> > > path;
@@ -1685,13 +1603,14 @@ pair<vector<T>, vector<vector<pair<T, int> > > > Graph<T>::shortestPath()
 		return make_pair(pr.first, path);
 	}
 	
+	// Not a simple graph
 	return make_pair(vector<T>(), vector<vector<pair<T, int> > >());
 }
 
 template <class T>
-void Graph<T>::printPath(ostream &out, map<T, pair<T, int> > path)
+void Graph<T>::printPath(ostream &out, map<T, pair<T, int> > path) const
 {
-	for(typename map<T, pair<T, int> >::iterator itr = path.begin(); itr != path.end(); itr++)
+	for(typename map<T, pair<T, int> >::const_iterator itr = path.begin(); itr != path.end(); itr++)
 	{
 		out << itr->first << " =====> ";
 		
@@ -1725,7 +1644,7 @@ void Graph<T>::printPath(ostream &out, map<T, pair<T, int> > path)
 }
 
 template <class T>
-void Graph<T>::printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int> > > > dist)
+void Graph<T>::printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int> > > > dist) const
 {
 	const int n = numVertices();
 	
@@ -1803,11 +1722,11 @@ void Graph<T>::printPath(ostream &out, pair<vector<T>, vector<vector<pair<T, int
 }
 
 template <class T>		
-vector<T> Graph<T>::getVertices()
+vector<T> Graph<T>::getVertices() const
 {
 	vector<T> res;
 	
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		res.push_back(itr->first);
 	}
@@ -1816,17 +1735,17 @@ vector<T> Graph<T>::getVertices()
 }
 
 template <class T>
-vector<pair<T, pair<T, int> > > Graph<T>::getEdges()
+vector<Edge<T> *> Graph<T>::getEdges() const
 {
-	vector<pair<T, pair<T, int> > > res;
+	vector<Edge<T> *> res;
 	
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
 		
-		for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+		for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 		{
-			res.push_back(make_pair(itr->first, make_pair(a->first->getLabel(), a->second)));
+			res.push_back(new Edge<T>(itr->first, a->first->getLabel(), a->second));
 		}
 	}
 		
@@ -1834,7 +1753,7 @@ vector<pair<T, pair<T, int> > > Graph<T>::getEdges()
 }
 
 template <class T>
-vector<vector<T> > Graph<T>::getVerticesComponentwise()
+vector<vector<T> > Graph<T>::getVerticesComponentwise() const
 {
 	vector<vector<T> > res;
 	map<T, bool> visited;
@@ -1844,12 +1763,12 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 		stack<T> finished_vertices;
 		map<T, bool> visited;
 		
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
 			visited[itr->first] = false;
 		}
 		
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
 			if(!visited[itr->first])
 			{
@@ -1859,7 +1778,7 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 		
 		Graph<T> rev_graph = reverse();
 		
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 		{
 			visited[itr->first] = false;
 		}
@@ -1873,8 +1792,7 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 			{
 				vector<T> vlist = rev_graph.dfs(curr);
 				
-				const int sz = vlist.size();
-				for(int i = 0; i < sz; i++)
+				for(int i = vlist.size() - 1; i >= 0; i--)
 				{
 					rev_graph.removeVertex(vlist[i]); // Done to avoid revisiting
 					visited[vlist[i]] = true;
@@ -1887,66 +1805,51 @@ vector<vector<T> > Graph<T>::getVerticesComponentwise()
 		return res;
 	}
 	
-	for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
 		visited[itr->first] = false;
 	}
 	
-	while(1)
+	for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 	{
-		T source;
-		bool unvisited = false;
-		
-		for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+		if(!visited[itr->first])
 		{
-			if(!visited[itr->first])
+			vector<T> vlist = dfs(itr->first);
+	
+			for(int i = vlist.size() - 1; i >= 0; i--)
 			{
-				source = itr->first;
-				unvisited = true;
-				break;
+				visited[vlist[i]] = true;
 			}
+	
+			res.push_back(vlist);
 		}
-		
-		if(!unvisited)
-		{
-			break;
-		}
-		
-		vector<T> vlist = dfs(source);
-		
-		const int sz = vlist.size();
-		for(int i = 0; i < sz; i++)
-		{
-			visited[vlist[i]] = true;
-		}
-		
-		res.push_back(vlist);
 	}
 	
 	return res;
 }
 
 template <class T>
-vector<Graph<T> *> Graph<T>::getConnectedComponents()
+vector<Graph<T> *> Graph<T>::getConnectedComponents() const
 {
 	vector<Graph<T> *> res;
 	vector<vector<T> > vertices_compwise = getVerticesComponentwise();
 	
-	for(typename vector<vector<T> >::iterator i = vertices_compwise.begin(); i != vertices_compwise.end(); i++)
+	for(typename vector<vector<T> >::const_iterator i = vertices_compwise.begin(); i != vertices_compwise.end(); i++)
 	{
-		Graph<T> *g = new Graph<T>(directed);
+		Graph<T> *g = new Graph<T>(is_directed);
 		
-		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
+		for(typename vector<T>::const_iterator j = i->begin(); j != i->end(); j++)
 		{
 			g->addVertex(*j);
 		}
 		
-		for(typename vector<T>::iterator j = i->begin(); j != i->end(); j++)
+		for(typename vector<T>::const_iterator j = i->begin(); j != i->end(); j++)
 		{
 			multiset<pair<Vertex *, int> > adj = findVertex(*j)->getAdjacentNodes();
 			
-			for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+			for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 			{
+				// Graph::addEdge() is intentionally not called here
 				Vertex *src = g->findVertex(*j);
 				Vertex *dest = g->findVertex(a->first->getLabel());
 				
@@ -1964,9 +1867,9 @@ vector<Graph<T> *> Graph<T>::getConnectedComponents()
 }
 
 template <class T>
-Graph<T> Graph<T>::minimumSpanningTree()
+Graph<T> Graph<T>::minimumSpanningTree() const
 {
-	Graph<T> t(directed);
+	Graph<T> t(is_directed);
 	
 	if(!isDirected() && isConnected())
 	{
@@ -1974,7 +1877,7 @@ Graph<T> Graph<T>::minimumSpanningTree()
 		{
 			map<T, bool> visited;
 			
-			for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+			for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 			{
 				visited[itr->first] = false;
 				t.addVertex(itr->first);
@@ -1987,12 +1890,12 @@ Graph<T> Graph<T>::minimumSpanningTree()
 				int min_dist = (int) INFINITY;
 				pair<T, T> curr;
 				
-				for(typename map<T, Vertex *>::iterator itr = vertices.begin(); itr != vertices.end(); itr++)
+				for(typename map<T, Vertex *>::const_iterator itr = vertices.begin(); itr != vertices.end(); itr++)
 				{
 					if(visited[itr->first])
 					{
 						multiset<pair<Vertex *, int> > adj = itr->second->getAdjacentNodes();
-						for(typename multiset<pair<Vertex *, int> >::iterator a = adj.begin(); a != adj.end(); a++)
+						for(typename multiset<pair<Vertex *, int> >::const_iterator a = adj.begin(); a != adj.end(); a++)
 						{
 							if(!visited[a->first->getLabel()] && a->second < min_dist)
 							{
@@ -2043,9 +1946,7 @@ bool Graph<T>::mergeVertices(T first, T second, T new_label)
 	}
 	
 	// Rename the vertex
-	ft->setLabel(new_label);
-	vertices.erase(first);
-	vertices[new_label] = ft;
+	assert(renameVertex(first, new_label));
 	
 	// Add outgoing edges from second vertex
 	ft->addEdgesInBatch(sd->getAdjacentNodes());
@@ -2063,7 +1964,7 @@ bool Graph<T>::mergeVertices(T first, T second, T new_label)
 }
 
 template <class T>
-T Graph<T>::pickRandomVertex()
+T Graph<T>::pickRandomVertex() const
 {
 	int rnd = rand() % vertices.size();
 	typename map<T, Graph<T>::Vertex *>::const_iterator it(vertices.begin());
@@ -2073,7 +1974,7 @@ T Graph<T>::pickRandomVertex()
 }
 
 template <class T>
-Edge<T> * Graph<T>::pickRandomEdge()
+Edge<T> * Graph<T>::pickRandomEdge() const
 {
 	Vertex *hd;
 	multiset<pair<Graph<T>::Vertex *, int> > adj;
@@ -2103,9 +2004,9 @@ Edge<T> * Graph<T>::pickRandomEdge()
 }
 
 template <class T>
-int Graph<T>::minCut()
+int Graph<T>::minCut() const
 {
-	if(directed)
+	if(is_directed)
 	{
 		return -1;
 	}

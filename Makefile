@@ -1,6 +1,4 @@
-all:
-	g++ graph_test.cpp -o graph -g
-	./graph
+all: test_directed test_weighted test_topological test_bfsdfs test_properties test_shortest_path test_components test_path test_mincut
 	
 clean:
 	rm -rf graph directed weighted topsort bfs_dfs properties shortest_path components path mincut

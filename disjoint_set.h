@@ -2,77 +2,73 @@
 #define _DISJOINT_SET
 
 #include <iostream>
+#include <map>
 
 using namespace std;
 
+template<class T>
 class DisjointSet  // Weighted quick union + Path compression
 {
 	private:
-	int *id, *count, size;
+		map<T, unsigned int> size;
+		map<T, T> parent;
 	
-	void combine_with(int a, int b)
-	{
-		id[a] = b;
-		count[b] += count[a];
-	}
-	
-	public:
-	DisjointSet(int N)
-	{
-		size = N;
-		id = new int[size];
-		count = new int[size];
-		
-		initialize();
-	}
-	
-	void initialize()
-	{
-		for(int i = 0; i < size; i++)
+		void combine(T set1, T set2)
 		{
-			id[i] = i;
-			count[i] = 1; // Initially there will be one node in the tree
+			parent[set1] = set2;
+			size[set1] += size[set2];
 		}
-	}
-	
-	void join(int a, int b)
-	{
-		int a_root = root(a);
-		int b_root = root(b);
+
+	public:
+		bool exists(T elem)
+		{
+			return parent.find(elem) != parent.end();
+		}
 		
-		if(count[a_root] < count[b_root])
-			combine_with(a_root, b_root);
-		else
-			combine_with(b_root, a_root);
-	}
-	
-	bool connected(int a, int b)
-	{
-		return root(a) == root(b);
-	}
-	
-	int root(int num)
-	{
-		id[num] = id[id[num]]; // Path compression statement
-		return (num == id[num])? num: root(id[num]);
-	}
-	
-	void display()
-	{	
-		for(int i = 0; i < size; i++)
-			cout << id[i] << " ";
+		void create(T elem)
+		{
+			if(!exists(elem))
+			{
+				parent[elem] = elem;
+				size[elem] = 1;
+			}
+		}
+
+		void join(T elem1, T elem2)
+		{
+			T elem1_set = find(elem1);
+			T elem2_set = find(elem2);
 			
-		cout << endl;
-		
-		for(int i = 0; i < size; i++)
-			cout << count[i] << " ";
-	}
+			if(elem1_set != elem2_set)
+			{
+				if(size[elem1_set] < size[elem2_set])
+				{
+					combine(elem1_set, elem2_set);
+				}
+				else
+				{
+					combine(elem2_set, elem1_set);
+				}
+			}
+		}		
 	
-	~DisjointSet()
-	{
-		delete count;
-		delete id;
-	}
+		bool connected(T elem1, T elem2)
+		{
+			return find(elem1) == find(elem2);
+		}
+	
+		T find(int elem)
+		{
+			return (parent[elem] = (parent[elem] == elem? elem: find(parent[elem])));
+		}
+
+		friend ostream& operator<<(ostream &out, DisjointSet<T> &s)
+		{
+			for(typename map<T, T>::iterator itr = s.parent.begin(); itr != s.parent.end(); itr++)
+			{
+				out << itr->first << " ------> " << itr->second << endl;
+			}
+		}
 };
 
 #endif

@@ -40,11 +40,11 @@ int main()
 	
 	cout << endl;
 	
-	vector<pair<int, pair<int, int> > > edges = g.getEdges();
+	vector<Edge<int> *> edges = g.getEdges();
 	
 	for(int i = 0; i < edges.size(); i++)
 	{
-		cout << edges[i].first << " " << edges[i].second.first << " " << edges[i].second.second << endl;
+		cout << edges[i]->src << " " << edges[i]->dest << " " << edges[i]->cost << endl;
 	}
 	
 	cout << endl;
@@ -106,7 +106,7 @@ int main()
 	
 	for(int i = 0; i < edges.size(); i++)
 	{
-		cout << edges[i].first << " " << edges[i].second.first << " " << edges[i].second.second << endl;
+		cout << (*edges[i]);
 	}
 	
 	cout << endl;
