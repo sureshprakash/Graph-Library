@@ -1,3 +1,50 @@
+/**
+Implementation of Graph algorithms in one single class
+Copyright (C) Suresh P (sureshsonait@gmail.com)
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**/
+
+/**
+	YET TO BE IMPLEMENTED
+	-------------------------
+	Krushkal's algorithm
+	Euler's path
+	Euler's circuit
+	Hamiltonean path
+	Hamiltonean circuit
+	Travelling salesman problem
+	isComplete()
+	isBipartite()
+	isRegular()
+	isPlanar()
+	Bipartite Matching problem (Hungarian algorithm)
+	Graph coloring problem
+	Cycle detection
+	Finding articulation points
+	Cut Vertex
+	Cut Set
+	isSeparable()
+	block
+	eccentricity
+	radius
+	diameter
+	Clique detection
+	Single pair shortest path
+ */
+
 #ifndef _GRAPH_H
 #define _GRAPH_H
 
@@ -51,14 +98,6 @@ class Edge
 			return out;
 		}
 };
-
-/*
- * Source        : graph.h
- * Description   : Implementation of Graph algorithms in one class
- * Author        : Suresh. P
- * Email         : sureshsonait@gmail.com
- * Copyright     : This library is free to distribute provided that this comment part is not removed.
- */
 
 template <class T>
 class Graph
@@ -1217,6 +1256,7 @@ bool Graph<T>::isAcyclic() const
 	
 	if(is_directed)
 	{
+		// TODO: This is not the right way of detecting cycle in directed graph
 		try
 		{
 			topologicalSort();
